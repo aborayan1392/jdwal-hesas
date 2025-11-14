@@ -1,0 +1,1292 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مؤقت الحصص</title>
+    <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&amp;family=Amiri:wght@400;700&amp;display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #f0f4f8;
+            --bg-secondary: #ffffff;
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --text-primary: #2d3748;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --accent-color: #667eea;
+            --accent-light: #f7fafc;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 20px rgba(102, 126, 234, 0.15);
+            --shadow-lg: 0 10px 40px rgba(102, 126, 234, 0.25);
+            --success-color: #48bb78;
+            --warning-color: #ed8936;
+            --danger-color: #f56565;
+        }
+
+        .dark {
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --bg-gradient-start: #553c9a;
+            --bg-gradient-end: #b393d3;
+            --text-primary: #f7fafc;
+            --text-secondary: #e2e8f0;
+            --text-muted: #a0aec0;
+            --accent-color: #9f7aea;
+            --accent-light: #2d3748;
+            --border-color: #4a5568;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0;
+            min-height: 100vh;
+            background: var(--bg-primary);
+        }
+
+        /* Header with gradient */
+        .header {
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            padding: 2rem 1.5rem 3rem;
+            border-radius: 0 0 30px 30px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .logo-icon img {
+            width: 70%;
+            height: 70%;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .current-time {
+            color: white;
+            font-size: 0.875rem;
+            opacity: 0.95;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .current-date {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+
+        .current-period-card {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .current-label {
+            color: white;
+            font-size: 0.875rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .current-period-name {
+            color: white;
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .time-progress {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .time-info {
+            color: white;
+            font-size: 0.875rem;
+            opacity: 0.95;
+        }
+
+        .time-remaining {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: white;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Schedule List */
+        .schedule-container {
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            padding-right: 0.5rem;
+        }
+
+        .schedule-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .schedule-controls {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .schedule-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            cursor: pointer;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            background: var(--accent-light);
+            border: 1px solid var(--border-color);
+            user-select: none;
+        }
+
+        .schedule-toggle input {
+            cursor: pointer;
+        }
+
+        .period-card {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 1.75rem 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .period-card::before {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .period-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .period-card.active {
+            border-color: var(--accent-color);
+            box-shadow: var(--shadow-md);
+            background: linear-gradient(to left, rgba(102, 126, 234, 0.08), var(--bg-secondary));
+        }
+
+        .period-card.active::before {
+            opacity: 1;
+        }
+
+        .period-card.completed {
+            opacity: 0.6;
+        }
+
+        .period-card.completed .period-number {
+            background: var(--text-muted);
+        }
+
+        .period-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .period-number {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.75rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .period-info {
+            flex: 1;
+            text-align: center;
+        }
+
+        .period-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .period-time {
+            font-size: 1.125rem;
+            color: var(--text-muted);
+            direction: ltr;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .period-status {
+            display: inline-block;
+            padding: 0.5rem 1.25rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-top: 0.75rem;
+        }
+
+        .status-active {
+            background: rgba(72, 187, 120, 0.15);
+            color: var(--success-color);
+        }
+
+        .status-upcoming {
+            background: rgba(237, 137, 54, 0.15);
+            color: var(--warning-color);
+        }
+
+        .status-completed {
+            background: rgba(160, 174, 192, 0.15);
+            color: var(--text-muted);
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        /* Edit Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .modal-icon {
+            font-size: 1.75rem;
+        }
+
+        .modal-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--accent-light);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            font-size: 1rem;
+            font-family: 'Cairo', sans-serif;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 0.875rem 1.75rem;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'Cairo', sans-serif;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-cancel {
+            background: var(--accent-light);
+            color: var(--text-muted);
+        }
+
+        .btn-cancel:hover {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-save:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 100;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .fab:hover {
+            transform: translateX(-50%) scale(1.1);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
+        }
+
+        .fab:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+            }
+            50% {
+                box-shadow: 0 8px 32px rgba(102, 126, 234, 0.6), 0 0 0 0 rgba(102, 126, 234, 0.4);
+            }
+        }
+
+        /* Add Button in Header */
+        .add-button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .btn-add-header {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        .btn-add-header:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-add-header:active {
+            transform: translateY(0);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 360px) {
+            .header {
+                padding: 1.5rem 1rem 2.5rem;
+            }
+
+            .current-period-name {
+                font-size: 1.5rem;
+            }
+
+            .period-name {
+                font-size: 1rem;
+            }
+        }
+    </style>
+<script src="https://puc.poecdn.net/authenticated_preview_page/syncedState.3f7572448765332f3047.js"></script></head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-top">
+                    <div class="logo">
+                        <div class="logo-icon"><img src="icons/icon-192.png" alt="مؤقت الحصص"></div>
+                        <div class="logo-text">مؤقت الحصص</div>
+                    </div>
+                    <div class="current-time">
+                        <div id="clock">--:--:--</div>
+                        <div class="current-date" id="date">--/--/----</div>
+                        <button id="enableNotificationsBtn" style="margin-top:0.5rem;padding:0.25rem 0.75rem;font-size:0.75rem;border-radius:999px;border:none;cursor:pointer;background:rgba(255,255,255,0.2);color:#fff;">تفعيل الإشعارات</button>
+                    </div>
+                </div>
+
+                <div class="current-period-card">
+                    <div class="current-label">الحصة الحالية</div>
+                    <div class="current-period-name" id="currentPeriodName">جاري التحميل...</div>
+                    <div class="time-progress">
+                        <span class="time-info">الوقت المتبقي:</span>
+                        <span class="time-remaining" id="timeRemaining">--:--</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="add-button-container">
+                    <button class="btn-add-header" onclick="openAddModal()">
+                        <span style="font-size: 1.25rem;">➕</span>
+                        إضافة حصة جديدة
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Schedule List -->
+        <main class="schedule-container">
+            <h2 class="section-title">جدول اليوم الدراسي</h2>
+            <div class="schedule-controls">
+                <label class="schedule-toggle">
+                    <input type="checkbox" id="toggleCompleted" checked onchange="toggleCompletedChange(this)">
+                    <span>إظهار الحصص المنتهية</span>
+                </label>
+            </div>
+            <div class="schedule-list" id="scheduleList">
+                <!-- Schedule items will be inserted here by JavaScript -->
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            تطبيق جدول الحصص المدرسي 📖
+        </footer>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span class="modal-icon">✏️</span>
+                    تعديل الحصة
+                </div>
+                <button class="modal-close" onclick="closeEditModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">اسم الحصة</label>
+                    <input type="text" id="editName" class="form-input" placeholder="مثال: الحصة الأولى">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">وقت البداية</label>
+                        <input type="time" id="editStart" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">وقت النهاية</label>
+                        <input type="time" id="editEnd" class="form-input">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">الأيقونة</label>
+                    <input type="text" id="editIcon" class="form-input" placeholder="مثال: 📚" maxlength="2">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeEditModal()">
+                    إلغاء
+                </button>
+                <button class="btn btn-danger" onclick="deletePeriod()">
+                    🗑️ حذف الحصة
+                </button>
+                <button class="btn btn-save" onclick="saveEdit()">
+                    💾 حفظ التعديلات
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span class="modal-icon">➕</span>
+                    إضافة حصة جديدة
+                </div>
+                <button class="modal-close" onclick="closeAddModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">اسم الحصة</label>
+                    <input type="text" id="addName" class="form-input" placeholder="مثال: الحصة التاسعة">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">وقت البداية</label>
+                        <input type="time" id="addStart" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">وقت النهاية</label>
+                        <input type="time" id="addEnd" class="form-input">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">الأيقونة</label>
+                    <input type="text" id="addIcon" class="form-input" placeholder="مثال: 📚" maxlength="2">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeAddModal()">
+                    إلغاء
+                </button>
+                <button class="btn btn-save" onclick="saveAdd()">
+                    ➕ إضافة الحصة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Schedule data (with localStorage persistence)
+        let schedule = [
+            { id: 1, name: 'طابور الصباح', start: '07:00', end: '07:15', icon: '🏫' },
+            { id: 2, name: 'الحصة الأولى', start: '07:15', end: '08:00', icon: '1️⃣' },
+            { id: 3, name: 'الحصة الثانية', start: '08:00', end: '08:45', icon: '2️⃣' },
+            { id: 4, name: 'الحصة الثالثة', start: '08:45', end: '09:30', icon: '3️⃣' },
+            { id: 5, name: 'استراحة', start: '09:30', end: '09:45', icon: '☕' },
+            { id: 6, name: 'الحصة الرابعة', start: '09:45', end: '10:30', icon: '4️⃣' },
+            { id: 7, name: 'الحصة الخامسة', start: '10:30', end: '11:15', icon: '5️⃣' },
+            { id: 8, name: 'الحصة السادسة', start: '11:15', end: '12:00', icon: '6️⃣' },
+            { id: 9, name: 'الحصة السابعة', start: '12:00', end: '12:45', icon: '7️⃣' },
+            { id: 10, name: 'الحصة الثامنة', start: '12:45', end: '13:30', icon: '8️⃣' }
+        ];
+
+        let showCompletedPeriods = true;
+
+        function loadSchedule() {
+            try {
+                const stored = localStorage.getItem('scheduleData');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        schedule = parsed;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function saveSchedule() {
+            try {
+                localStorage.setItem('scheduleData', JSON.stringify(schedule));
+            } catch (e) {}
+        }
+
+        // Convert time string to minutes
+        function timeToMinutes(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        // Format minutes to HH:MM
+        function minutesToTime(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+        }
+
+        // Get current period
+        function getCurrentPeriod() {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+            for (let period of schedule) {
+                const startMinutes = timeToMinutes(period.start);
+                const endMinutes = timeToMinutes(period.end);
+
+                if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+                    return {
+                        period: period,
+                        timeRemaining: endMinutes - currentMinutes,
+                        totalDuration: endMinutes - startMinutes,
+                        status: 'active'
+                    };
+                }
+            }
+
+            // Check if before first period
+            if (currentMinutes < timeToMinutes(schedule[0].start)) {
+                return {
+                    period: schedule[0],
+                    timeRemaining: timeToMinutes(schedule[0].start) - currentMinutes,
+                    totalDuration: 0,
+                    status: 'upcoming'
+                };
+            }
+
+            // After all periods
+            return {
+                period: { name: 'انتهى اليوم الدراسي', start: '13:30', end: '13:30', icon: '🏠' },
+                timeRemaining: 0,
+                totalDuration: 0,
+                status: 'completed'
+            };
+        }
+
+        // Update clock
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateStr = now.toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            document.getElementById('clock').textContent = timeStr;
+            document.getElementById('date').textContent = dateStr;
+        }
+
+        // Update current period display
+        function updateCurrentPeriod() {
+            const current = getCurrentPeriod();
+            const periodNameEl = document.getElementById('currentPeriodName');
+            const timeRemainingEl = document.getElementById('timeRemaining');
+            const progressBar = document.getElementById('progressBar');
+
+            periodNameEl.textContent = current.period.name;
+
+            if (current.status === 'completed') {
+                timeRemainingEl.textContent = 'مكتمل';
+                progressBar.style.width = '100%';
+            } else if (current.status === 'upcoming') {
+                const hours = Math.floor(current.timeRemaining / 60);
+                const mins = current.timeRemaining % 60;
+                timeRemainingEl.textContent = `يبدأ خلال ${hours > 0 ? hours + ' ساعة و' : ''}${mins} دقيقة`;
+                progressBar.style.width = '0%';
+            } else {
+                const hours = Math.floor(current.timeRemaining / 60);
+                const mins = current.timeRemaining % 60;
+                timeRemainingEl.textContent = `${hours > 0 ? hours + ':' : ''}${String(mins).padStart(2, '0')}`;
+
+                const progress = ((current.totalDuration - current.timeRemaining) / current.totalDuration) * 100;
+                progressBar.style.width = `${progress}%`;
+            }
+        }
+
+        // Current editing period
+        let currentEditingPeriod = null;
+
+        // Open edit modal
+        function openEditModal(periodId) {
+            const period = schedule.find(p => p.id === periodId);
+            if (!period) return;
+
+            currentEditingPeriod = periodId;
+            document.getElementById('editName').value = period.name;
+            document.getElementById('editStart').value = period.start;
+            document.getElementById('editEnd').value = period.end;
+            document.getElementById('editIcon').value = period.icon;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            currentEditingPeriod = null;
+        }
+
+        // Save edit
+        function saveEdit() {
+            if (currentEditingPeriod === null) return;
+
+            const period = schedule.find(p => p.id === currentEditingPeriod);
+            if (!period) return;
+
+            period.name = document.getElementById('editName').value || period.name;
+            period.start = document.getElementById('editStart').value || period.start;
+            period.end = document.getElementById('editEnd').value || period.end;
+            period.icon = document.getElementById('editIcon').value || period.icon;
+
+            schedule.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+            saveSchedule();
+
+            closeEditModal();
+            renderSchedule();
+            updateCurrentPeriod();
+        }
+
+        function deletePeriod() {
+            if (currentEditingPeriod === null) return;
+
+            const confirmDelete = confirm('هل أنت متأكد من حذف هذه الحصة؟');
+            if (!confirmDelete) return;
+
+            schedule = schedule.filter(p => p.id !== currentEditingPeriod);
+
+            saveSchedule();
+
+            currentEditingPeriod = null;
+            closeEditModal();
+            renderSchedule();
+            updateCurrentPeriod();
+        }
+
+        // Open add modal
+        function openAddModal() {
+            document.getElementById('addName').value = '';
+            document.getElementById('addStart').value = '';
+            document.getElementById('addEnd').value = '';
+            document.getElementById('addIcon').value = '📚';
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        // Close add modal
+        function closeAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        // Save new period
+        function saveAdd() {
+            const name = document.getElementById('addName').value;
+            const start = document.getElementById('addStart').value;
+            const end = document.getElementById('addEnd').value;
+            const icon = document.getElementById('addIcon').value || '📚';
+
+            if (!name || !start || !end) {
+                showCustomAlert('⚠️ تنبيه', 'الرجاء ملء جميع الحقول المطلوبة');
+                return;
+            }
+
+            // Get the highest ID
+            const maxId = Math.max(...schedule.map(p => p.id), 0);
+
+            // Add new period
+            const newPeriod = {
+                id: maxId + 1,
+                name: name,
+                start: start,
+                end: end,
+                icon: icon
+            };
+
+            schedule.push(newPeriod);
+
+            // Sort schedule by start time
+            schedule.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+
+            saveSchedule();
+
+            closeAddModal();
+            renderSchedule();
+            updateCurrentPeriod();
+
+            showCustomAlert('✅ نجح', 'تم إضافة الحصة بنجاح!');
+        }
+
+        // Custom alert function
+        function showCustomAlert(title, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: var(--bg-secondary);
+                padding: 2rem;
+                border-radius: 20px;
+                box-shadow: var(--shadow-lg);
+                z-index: 10000;
+                text-align: center;
+                min-width: 280px;
+                animation: slideUp 0.3s ease;
+            `;
+            alertDiv.innerHTML = `
+                <div style="font-size: 2rem; margin-bottom: 1rem;">${title}</div>
+                <div style="font-size: 1.125rem; color: var(--text-secondary); margin-bottom: 1.5rem;">${message}</div>
+                <button onclick="this.parentElement.remove()" style="
+                    background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+                    color: white;
+                    border: none;
+                    padding: 0.75rem 2rem;
+                    border-radius: 12px;
+                    font-size: 1rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    font-family: 'Cairo', sans-serif;
+                ">حسناً</button>
+            `;
+            document.body.appendChild(alertDiv);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.remove();
+                }
+            }, 3000);
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const editModal = document.getElementById('editModal');
+            const addModal = document.getElementById('addModal');
+            if (e.target === editModal) {
+                closeEditModal();
+            }
+            if (e.target === addModal) {
+                closeAddModal();
+            }
+        });
+
+        function toggleCompletedChange(checkbox) {
+            showCompletedPeriods = checkbox.checked;
+            renderSchedule();
+        }
+
+        // Render schedule list
+        function renderSchedule() {
+            const scheduleList = document.getElementById('scheduleList');
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+            const filtered = schedule.filter(period => {
+                const startMinutes = timeToMinutes(period.start);
+                const endMinutes = timeToMinutes(period.end);
+
+                let status = '';
+                let statusClass = '';
+                let cardClass = 'period-card';
+
+                if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+                    status = 'جارية الآن';
+                    statusClass = 'status-active';
+                    cardClass += ' active';
+                } else if (currentMinutes < startMinutes) {
+                    status = 'قادمة';
+                    statusClass = 'status-upcoming';
+                } else {
+                    status = 'مكتملة';
+                    statusClass = 'status-completed';
+                    cardClass += ' completed';
+                    if (!showCompletedPeriods) return false;
+                }
+
+                return true;
+            });
+
+            scheduleList.innerHTML = filtered.map(period => {
+                const startMinutes = timeToMinutes(period.start);
+                const endMinutes = timeToMinutes(period.end);
+
+                const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+
+                let status = '';
+                let statusClass = '';
+                let cardClass = 'period-card';
+
+                if (nowMinutes >= startMinutes && nowMinutes < endMinutes) {
+                    status = 'جارية الآن';
+                    statusClass = 'status-active';
+                    cardClass += ' active';
+                } else if (nowMinutes < startMinutes) {
+                    status = 'قادمة';
+                    statusClass = 'status-upcoming';
+                } else {
+                    status = 'مكتملة';
+                    statusClass = 'status-completed';
+                    cardClass += ' completed';
+                }
+
+                return `
+                    <div class="${cardClass}" ondblclick="openEditModal(${period.id})">
+                        <div class="period-header">
+                            <div class="period-number">${period.icon}</div>
+                            <div class="period-info">
+                                <div class="period-name">${period.name}</div>
+                                <div class="period-time">${period.start} - ${period.end}</div>
+                            </div>
+                        </div>
+                        <span class="period-status ${statusClass}">${status}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize
+        function init() {
+            loadSchedule();
+            updateClock();
+            updateCurrentPeriod();
+            renderSchedule();
+
+            // Update every second
+            setInterval(() => {
+                updateClock();
+                updateCurrentPeriod();
+                renderSchedule();
+            }, 1000);
+
+            // Register service worker for PWA & notifications
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js');
+            }
+
+            // Notifications
+            const enableBtn = document.getElementById('enableNotificationsBtn');
+            if (enableBtn && 'Notification' in window) {
+                enableBtn.addEventListener('click', async () => {
+                    if (Notification.permission === 'granted') {
+                        scheduleNextNotification();
+                        showCustomAlert('🔔 الإشعارات', 'الإشعارات مفعلة بالفعل، سيتم تنبيهك قبل الحصة القادمة.');
+                        return;
+                    }
+
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        scheduleNextNotification();
+                        showCustomAlert('✅ تم', 'تم تفعيل الإشعارات، سيتم تنبيهك قبل الحصة القادمة.');
+                    } else {
+                        showCustomAlert('⚠️ تنبيه', 'لم يتم تفعيل الإشعارات.');
+                    }
+                });
+            } else if (enableBtn) {
+                enableBtn.style.display = 'none';
+            }
+        }
+
+        let nextNotificationTimeout = null;
+
+        function scheduleNextNotification() {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+            if (nextNotificationTimeout) {
+                clearTimeout(nextNotificationTimeout);
+                nextNotificationTimeout = null;
+            }
+
+            const next = getNextUpcomingPeriod();
+            if (!next) return;
+
+            const now = new Date();
+            const [startHour, startMin] = next.period.start.split(':').map(Number);
+            const startTime = new Date();
+            startTime.setHours(startHour, startMin, 0, 0);
+
+            // 5 minutes before
+            const notifyTime = new Date(startTime.getTime() - 5 * 60 * 1000);
+            const delay = notifyTime.getTime() - now.getTime();
+
+            if (delay <= 0) return;
+
+            nextNotificationTimeout = setTimeout(() => {
+                const title = '🕒 حان وقت الاستعداد';
+                const body = `سوف تبدأ ${next.period.name} الساعة ${next.period.start}`;
+
+                if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+                    navigator.serviceWorker.getRegistration().then(reg => {
+                        if (reg) {
+                            reg.showNotification(title, {
+                                body,
+                                icon: 'icons/icon-192.png',
+                                dir: 'rtl',
+                                lang: 'ar'
+                            });
+                        } else if (Notification) {
+                            new Notification(title, { body });
+                        }
+                    });
+                } else {
+                    new Notification(title, { body });
+                }
+
+                // Schedule again for next period
+                scheduleNextNotification();
+            }, delay);
+        }
+
+        // Start the app
+        init();
+    </script>
+
+
+
+</body></html>

@@ -1,0 +1,73 @@
+name: Build Jadwali 1.0.8
+run-name: Build Jadwali 1.0.8 APK
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'jadwali-build/trigger-108.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore and verify source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat jadwali-build/source_* > /tmp/source.b64
+          base64 -d /tmp/source.b64 > /tmp/source.tar.xz
+          echo '6f3450fde1b01af397cd7334f4a77a686550cec18d49fe478567d16599782b30  /tmp/source.tar.xz' | sha256sum -c -
+          mkdir -p /tmp/project
+          tar -xJf /tmp/source.tar.xz -C /tmp/project
+          grep -q "applicationId 'com.aborayan.jadwali'" /tmp/project/app/build.gradle
+          grep -q "versionCode 9" /tmp/project/app/build.gradle
+          grep -q "versionName '1.0.8'" /tmp/project/app/build.gradle
+          grep -q 'ScheduleRepository.periodName' /tmp/project/app/src/main/java/com/aborayan/jadwali/MainActivity.kt
+          grep -q 'alarmSoundUri' /tmp/project/app/src/main/java/com/aborayan/jadwali/ScheduleRepository.kt
+          grep -q 'أيام الإجازة الأسبوعية' /tmp/project/app/src/main/java/com/aborayan/jadwali/MainActivity.kt
+          grep -q 'LiveProgressBinding' /tmp/project/app/src/main/java/com/aborayan/jadwali/MainActivity.kt
+      - name: Android SDK
+        shell: bash
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - name: Build release
+        working-directory: /tmp/project
+        run: gradle --no-daemon --stacktrace :app:assembleRelease
+      - name: Sign verify and publish APK
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/project
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          OUT=/tmp/Jadwali-v1.0.8.apk
+          "$BT/zipalign" -f -p 4 "$ROOT/app/build/outputs/apk/release/app-release-unsigned.apk" /tmp/aligned.apk
+          "$BT/apksigner" sign --ks "$ROOT/scripts/debug.keystore" --ks-pass pass:android --key-pass pass:android --out "$OUT" /tmp/aligned.apk
+          "$BT/apksigner" verify --verbose --print-certs "$OUT" > /tmp/signing.txt
+          "$BT/aapt2" dump badging "$OUT" > /tmp/badging.txt
+          grep -q "package: name='com.aborayan.jadwali' versionCode='9' versionName='1.0.8'" /tmp/badging.txt
+          grep -q 'Signer #1 certificate SHA-256 digest: b604b6d8ad14419f810bd7417fb0f417133c92fa3702492c43e84698e4ac564f' /tmp/signing.txt
+          unzip -t "$OUT" >/dev/null
+          SHA=$(sha256sum "$OUT" | awk '{print $1}')
+          SIZE=$(stat -c%s "$OUT")
+          TAG='jadwali-v1.0.8-temp'
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" "$OUT" --repo "$GITHUB_REPOSITORY" --title 'Jadwali v1.0.8' --notes "Verified APK. SHA-256: $SHA" --prerelease
+          echo "APK_SHA256=$SHA"
+          echo "APK_SIZE=$SIZE"
+          echo "DOWNLOAD_URL=https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/Jadwali-v1.0.8.apk"

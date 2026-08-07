@@ -23,22 +23,25 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Restore and verify source
+      - name: Restore 1.0.7 source and apply 1.0.8 patch
         shell: bash
         run: |
           set -euo pipefail
-          cat jadwali-build/source_* > /tmp/source.b64
+          cat jadwali-build/source_ci_* > /tmp/source.b64
           base64 -d /tmp/source.b64 > /tmp/source.tar.xz
-          echo '6f3450fde1b01af397cd7334f4a77a686550cec18d49fe478567d16599782b30  /tmp/source.tar.xz' | sha256sum -c -
+          echo 'ad66aea1012cf812834055ff66b459cacef508ab8ab281ad3f1ae2147aeca9f0  /tmp/source.tar.xz' | sha256sum -c -
           mkdir -p /tmp/project
-          tar -xJf /tmp/source.tar.xz -C /tmp/project
-          grep -q "applicationId 'com.aborayan.jadwali'" /tmp/project/app/build.gradle
-          grep -q "versionCode 9" /tmp/project/app/build.gradle
-          grep -q "versionName '1.0.8'" /tmp/project/app/build.gradle
-          grep -q 'ScheduleRepository.periodName' /tmp/project/app/src/main/java/com/aborayan/jadwali/MainActivity.kt
-          grep -q 'alarmSoundUri' /tmp/project/app/src/main/java/com/aborayan/jadwali/ScheduleRepository.kt
-          grep -q 'أيام الإجازة الأسبوعية' /tmp/project/app/src/main/java/com/aborayan/jadwali/MainActivity.kt
-          grep -q 'LiveProgressBinding' /tmp/project/app/src/main/java/com/aborayan/jadwali/MainActivity.kt
+          tar -xJf /tmp/source.tar.xz -C /tmp/project --strip-components=1
+          cat jadwali-build/v108_patch_* > /tmp/v108.patch
+          cd /tmp/project
+          patch -p1 < /tmp/v108.patch
+          grep -q "applicationId 'com.aborayan.jadwali'" app/build.gradle
+          grep -q "versionCode 9" app/build.gradle
+          grep -q "versionName '1.0.8'" app/build.gradle
+          grep -q 'ScheduleRepository.periodName' app/src/main/java/com/aborayan/jadwali/MainActivity.kt
+          grep -q 'alarmSoundUri' app/src/main/java/com/aborayan/jadwali/ScheduleRepository.kt
+          grep -q 'أيام الإجازة الأسبوعية' app/src/main/java/com/aborayan/jadwali/MainActivity.kt
+          grep -q 'LiveProgressBinding' app/src/main/java/com/aborayan/jadwali/MainActivity.kt
       - name: Android SDK
         shell: bash
         run: |

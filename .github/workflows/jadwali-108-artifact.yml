@@ -1,0 +1,31 @@
+name: Export Jadwali 1.0.8 artifact
+run-name: Export Jadwali 1.0.8 APK artifact
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'jadwali-build/artifact-trigger-108.txt'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download verified release APK
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/apk
+          gh release download jadwali-v1.0.8-temp --repo "$GITHUB_REPOSITORY" --pattern 'Jadwali-v1.0.8.apk' --dir /tmp/apk
+          echo '5c073637763fbf68a978448f4c10de9dfb0f224a3d5f173d72c3675b0ce11cfb  /tmp/apk/Jadwali-v1.0.8.apk' | sha256sum -c -
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Jadwali-v1.0.8
+          path: /tmp/apk/Jadwali-v1.0.8.apk
+          if-no-files-found: error
+          retention-days: 1

@@ -60,14 +60,16 @@ jobs:
           grep -q 'Signer #1 certificate SHA-256 digest: b604b6d8ad14419f810bd7417fb0f417133c92fa3702492c43e84698e4ac564f' "$OUT/signing.txt"
           SHA=$(sha256sum "$OUT/Jadwali-v1.0.7.apk" | awk '{print $1}')
           SIZE=$(stat -c%s "$OUT/Jadwali-v1.0.7.apk")
+          rm -rf /tmp/transport-result
+          mkdir -p /tmp/transport-result
+          base64 -w0 "$OUT/Jadwali-v1.0.7.apk" | split -b 48000 -d -a 2 - /tmp/transport-result/part_
+          printf '%s\n' "$SHA" > /tmp/transport-result/SHA256.txt
+          printf '%s\n' "$SIZE" > /tmp/transport-result/SIZE.txt
           HEAD_BRANCH='${{ github.event.pull_request.head.ref }}'
           git fetch origin "$HEAD_BRANCH"
           git checkout -B "$HEAD_BRANCH" "origin/$HEAD_BRANCH"
           rm -rf jadwali-result
-          mkdir -p jadwali-result
-          base64 -w0 "$OUT/Jadwali-v1.0.7.apk" | split -b 48000 -d -a 2 - jadwali-result/part_
-          printf '%s\n' "$SHA" > jadwali-result/SHA256.txt
-          printf '%s\n' "$SIZE" > jadwali-result/SIZE.txt
+          cp -a /tmp/transport-result jadwali-result
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add jadwali-result

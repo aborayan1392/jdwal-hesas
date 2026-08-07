@@ -32,7 +32,7 @@ jobs:
           echo 'ad66aea1012cf812834055ff66b459cacef508ab8ab281ad3f1ae2147aeca9f0  /tmp/source.tar.xz' | sha256sum -c -
           mkdir -p /tmp/project
           tar -xJf /tmp/source.tar.xz -C /tmp/project --strip-components=1
-          cat jadwali-build/v108_patch_* > /tmp/v108.patch
+          base64 -d jadwali-build/v108.patch.xz.b64 | xz -d > /tmp/v108.patch
           cd /tmp/project
           patch -p1 < /tmp/v108.patch
           grep -q "applicationId 'com.aborayan.jadwali'" app/build.gradle

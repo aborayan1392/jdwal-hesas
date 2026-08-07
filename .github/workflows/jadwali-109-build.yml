@@ -23,16 +23,22 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Restore and verify source
+      - name: Restore 1.0.8 source and apply 1.0.9 patch
         shell: bash
         run: |
           set -euo pipefail
-          cat jadwali109/source_* > /tmp/source.b64
+          cat jadwali-build/source_ci_* > /tmp/source.b64
           base64 -d /tmp/source.b64 > /tmp/source.tar.xz
-          echo '0e67362db5e39816834ca974ccd185224ecc3ed0e38c7908b15ceec8505d6770  /tmp/source.tar.xz' | sha256sum -c -
+          echo 'ad66aea1012cf812834055ff66b459cacef508ab8ab281ad3f1ae2147aeca9f0  /tmp/source.tar.xz' | sha256sum -c -
           mkdir -p /tmp/project
           tar -xJf /tmp/source.tar.xz -C /tmp/project --strip-components=1
+          base64 -d jadwali-build/v108.patch.xz.b64 | xz -d > /tmp/v108.patch
           cd /tmp/project
+          patch -p1 < /tmp/v108.patch
+          base64 -d "$GITHUB_WORKSPACE/jadwali109/v109.patch.xz.b64" | xz -d > /tmp/v109.patch
+          echo '23af96f10ccec0d5508ae267d3434ceece405539af493226f65fbf6dcae5c147  /tmp/v109.patch' | sha256sum -c -
+          patch -p1 < /tmp/v109.patch
+          grep -q "applicationId 'com.aborayan.jadwali'" app/build.gradle
           grep -q "versionCode 10" app/build.gradle
           grep -q "versionName '1.0.9'" app/build.gradle
           grep -q 'وضع الحصة المباشر' app/src/main/java/com/aborayan/jadwali/MainActivity.kt

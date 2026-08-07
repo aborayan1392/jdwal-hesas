@@ -1,0 +1,45 @@
+name: Publish Jadwali APK transport
+run-name: Publish Jadwali 1.0.7 APK transport
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'jadwali-build/release-trigger.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reassemble and verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat jadwali-result/part_* | base64 -d > /tmp/Jadwali-v1.0.7.apk
+          EXPECTED_SHA=$(tr -d '\r\n' < jadwali-result/SHA256.txt)
+          EXPECTED_SIZE=$(tr -d '\r\n' < jadwali-result/SIZE.txt)
+          ACTUAL_SHA=$(sha256sum /tmp/Jadwali-v1.0.7.apk | awk '{print $1}')
+          ACTUAL_SIZE=$(stat -c%s /tmp/Jadwali-v1.0.7.apk)
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SIZE" = "$EXPECTED_SIZE"
+          unzip -t /tmp/Jadwali-v1.0.7.apk >/dev/null
+          echo "APK_SHA256=$ACTUAL_SHA"
+          echo "APK_SIZE=$ACTUAL_SIZE"
+      - name: Publish public temporary release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG='jadwali-v1.0.7-temp'
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" /tmp/Jadwali-v1.0.7.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --title 'Jadwali v1.0.7 temporary transport' \
+            --notes 'Temporary transport for the verified Jadwali v1.0.7 APK.' \
+            --prerelease
+          echo "DOWNLOAD_URL=https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/Jadwali-v1.0.7.apk"

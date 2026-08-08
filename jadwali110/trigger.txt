@@ -1,1 +1,2 @@
 build Jadwali 1.0.10
+trigger 2

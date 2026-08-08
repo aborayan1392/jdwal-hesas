@@ -1,0 +1,84 @@
+name: Build Jadwali 1.0.11
+run-name: Build Jadwali 1.0.11 APK
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'jadwali111/trigger.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore and verify source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat jadwali111/source_* > /tmp/source.b64
+          base64 -d /tmp/source.b64 > /tmp/source.tar.xz
+          echo '679016869af607dbe6470f595517b5410be2b3e3f8fdd8b0d56f39ffc4902b03  /tmp/source.tar.xz' | sha256sum -c -
+          mkdir -p /tmp/project
+          tar -xJf /tmp/source.tar.xz -C /tmp/project
+          cd /tmp/project
+          grep -q "applicationId 'com.aborayan.jadwali'" app/build.gradle
+          grep -q "versionCode 12" app/build.gradle
+          grep -q "versionName '1.0.11'" app/build.gradle
+          test -f app/src/main/res/drawable-nodpi/ic_launcher_art.webp
+          grep -q '#2EAF65' app/src/main/res/drawable/ic_nav_today.xml
+          grep -q '#4A90E2' app/src/main/res/drawable/ic_nav_week.xml
+          grep -q '#EAAE43' app/src/main/res/drawable/ic_nav_settings.xml
+          grep -q '@android:color/white' app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          grep -q 'compoundDrawablePadding = dp(3)' app/src/main/java/com/aborayan/jadwali/MainActivity.kt
+      - name: Android SDK
+        shell: bash
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - name: Build release
+        working-directory: /tmp/project
+        run: gradle --no-daemon --stacktrace :app:assembleRelease
+      - name: Sign and verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/project
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          OUT=/tmp/Jadwali-v1.0.11.apk
+          "$BT/zipalign" -f -p 4 "$ROOT/app/build/outputs/apk/release/app-release-unsigned.apk" /tmp/aligned.apk
+          "$BT/apksigner" sign --ks "$ROOT/scripts/debug.keystore" --ks-pass pass:android --key-pass pass:android --out "$OUT" /tmp/aligned.apk
+          "$BT/apksigner" verify --verbose --print-certs "$OUT" > /tmp/signing.txt
+          "$BT/aapt2" dump badging "$OUT" > /tmp/badging.txt
+          grep -q "package: name='com.aborayan.jadwali' versionCode='12' versionName='1.0.11'" /tmp/badging.txt
+          grep -q 'Signer #1 certificate SHA-256 digest: b604b6d8ad14419f810bd7417fb0f417133c92fa3702492c43e84698e4ac564f' /tmp/signing.txt
+          unzip -t "$OUT" >/dev/null
+          sha256sum "$OUT" | tee /tmp/SHA256.txt
+          stat -c%s "$OUT" | tee /tmp/SIZE.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Jadwali-v1.0.11
+          path: /tmp/Jadwali-v1.0.11.apk
+          retention-days: 1
+      - name: Publish temporary release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG='jadwali-v1.0.11-temp'
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+          SHA=$(cut -d' ' -f1 /tmp/SHA256.txt)
+          gh release create "$TAG" /tmp/Jadwali-v1.0.11.apk --repo "$GITHUB_REPOSITORY" --title 'Jadwali v1.0.11' --notes "Verified APK. SHA-256: $SHA" --prerelease
+          echo "DOWNLOAD_URL=https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/Jadwali-v1.0.11.apk"

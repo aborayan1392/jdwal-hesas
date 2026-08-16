@@ -29,9 +29,9 @@ jobs:
           from pathlib import Path
           p=Path('teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt')
           s=p.read_text()
-          old='fun completionPercent():Int{ val ss=getSections(false); if(ss.isEmpty())return 0; val pts=ss.sumOf{when(it.status){"مكتمل"->100;"قيد الإنجاز"->50;else->0}}; return pts/ss.size }'
-          new='fun completionPercent():Int{ val ss=getSections(false); if(ss.isEmpty())return 0; val pts=ss.fold(0){acc,sec->acc+when(sec.status){"مكتمل"->100;"قيد الإنجاز"->50;else->0}}; return pts/ss.size }'
-          if old not in s: raise SystemExit('completionPercent pattern not found')
+          old='fun completionPercent():Int{val ss=getSections(false);if(ss.isEmpty())return 0;val pts=ss.sumOf{when(it.status){"مكتمل"->100;"قيد الإنجاز"->50;else->0}};return pts/ss.size}'
+          new='fun completionPercent():Int{val ss=getSections(false);if(ss.isEmpty())return 0;val pts=ss.fold(0){acc,sec->acc+when(sec.status){"مكتمل"->100;"قيد الإنجاز"->50;else->0}};return pts/ss.size}'
+          if old not in s: raise SystemExit('completionPercent exact pattern not found')
           p.write_text(s.replace(old,new))
           PY
           ! grep -R -F -q '? :' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio

@@ -1,0 +1,59 @@
+name: Build Teacher Portfolio APK
+on:
+  push:
+    branches: ['agent/teacher-portfolio-build']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore source
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d teacher-portfolio-payload/source.b64 > teacher-portfolio-source.tar.xz
+          echo '65e4e98f5e61ed181c5c4f1dd9f28a0ec9393a70312860f5da34bbfe849d3f86  teacher-portfolio-source.tar.xz' | sha256sum -c -
+          mkdir teacher_portfolio
+          tar -xJf teacher-portfolio-source.tar.xz -C teacher_portfolio
+      - name: Install Cairo font
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p teacher_portfolio/app/src/main/res/font
+          curl -L --fail --retry 3 'https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/Cairo%5Bslnt,wght%5D.ttf' -o teacher_portfolio/app/src/main/res/font/cairo.ttf
+          test -s teacher_portfolio/app/src/main/res/font/cairo.ttf
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android platform
+        run: yes | sdkmanager 'platforms;android-35' 'build-tools;35.0.0' >/dev/null
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile and lint
+        working-directory: teacher_portfolio
+        run: gradle --no-daemon lintDebug assembleDebug
+      - name: Verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=teacher_portfolio/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          unzip -tq "$APK"
+          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
+          mkdir -p dist
+          cp "$APK" dist/TeacherPortfolio-v1.0.0.apk
+          sha256sum dist/TeacherPortfolio-v1.0.0.apk > dist/TeacherPortfolio-v1.0.0.apk.sha256
+          tar -cJf dist/TeacherPortfolio-v1.0.0-source.tar.xz -C teacher_portfolio .
+          ls -lh dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: teacher-portfolio-v1.0.0
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7

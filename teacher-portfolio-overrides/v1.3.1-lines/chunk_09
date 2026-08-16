@@ -1,0 +1,13 @@
+-            val badge = RectF(rect.left + pad, rect.top + pad, rect.left + pad + badgeW, rect.top + pad + 24f)
++            val badge = RectF(rect.right - pad - badgeW, rect.top + pad, rect.right - pad, rect.top + pad + 24f)
+             canvas.drawRoundRect(badge, 8f, 8f, paint(GOLD))
+             drawCenteredNumber(canvas, number.toString(), badge, 11.5f, Color.WHITE)
+ 
+             var y = rect.top + pad
+-            val titleLeft = rect.left + pad + badgeW + 8f
+-            val titleWidth = rect.right - titleLeft - pad
++            val titleLeft = rect.left + pad
++            val titleWidth = rect.width() - pad * 2 - badgeW - 8f
+             val titleH = drawText(canvas, e.title.ifBlank { "بدون عنوان" }, titleLeft, y, titleWidth, 11.8f, INK, true, 2)
+             y += max(24f, titleH) + 4f
+ 

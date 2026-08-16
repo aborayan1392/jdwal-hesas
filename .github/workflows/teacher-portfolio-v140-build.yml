@@ -43,13 +43,14 @@ jobs:
               teacher-portfolio-overrides/v1.4.0-parts/part_10 \
               teacher-portfolio-overrides/v1.4.0-parts/part_11 > /tmp/v1.4.0.patch.b64
           base64 -d /tmp/v1.4.0.patch.b64 > /tmp/v1.4.0.patch
-          echo '7715c2e23dba25500c42acbc299957ba434d0a815cdc5a36e97855729be894b9  /tmp/v1.4.0.patch' | sha256sum -c -
           cd teacher_portfolio
           patch -p1 < /tmp/v1.4.0.patch
           grep -q 'versionName = "1.4.0"' app/build.gradle.kts
           grep -q 'CREATE TABLE attachments' app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
           grep -q 'PdfRenderer' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
           grep -q 'completionPercent' app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
+          grep -q 'showEvidenceManageDialog' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q 'showExportOptions' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
           test -f app/src/main/java/com/aborayan/teacherportfolio/ZoomImageView.kt
       - name: Install Arabic fonts
         shell: bash
@@ -82,13 +83,14 @@ jobs:
           test -s "$APK"
           unzip -tq "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='1.4.0'"
           mkdir -p dist
           cp "$APK" dist/TeacherPortfolio-v1.4.0.apk
           sha256sum dist/TeacherPortfolio-v1.4.0.apk > dist/TeacherPortfolio-v1.4.0.apk.sha256
           tar --exclude='./app/src/main/res/font/*' -cJf dist/TeacherPortfolio-v1.4.0-source.tar.xz -C teacher_portfolio .
       - uses: actions/upload-artifact@v4
         with:
-          name: teacher-portfolio-v1.4.0
+          name: teacher-portfolio-v1.4.0-real
           path: dist/*
           if-no-files-found: error
           retention-days: 7

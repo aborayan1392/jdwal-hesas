@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: Restore v1.2.3 source
+      - name: Restore v1.2.4 source
         shell: bash
         run: |
           set -euo pipefail
@@ -26,10 +26,12 @@ jobs:
           cd teacher_portfolio
           patch -p1 < ../teacher-portfolio-overrides/v1.2.2.patch
           patch -p1 < ../teacher-portfolio-overrides/v1.2.3.patch
-          grep -q 'versionName = "1.2.3"' app/build.gradle.kts
+          patch -p1 < ../teacher-portfolio-overrides/v1.2.4.patch
+          grep -q 'versionName = "1.2.4"' app/build.gradle.kts
+          grep -q 'drawCenteredNumber' app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
+          ! grep -q '📎 ${e.fileName}' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          ! grep -q 'المرفق: ${e.fileName}' app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
           grep -q 'SOFT_INPUT_ADJUST_RESIZE' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          grep -q 'ensureInputVisible' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          grep -q 'windowSoftInputMode="adjustResize|stateAlwaysHidden"' app/src/main/AndroidManifest.xml
       - name: Install Arabic fonts
         shell: bash
         run: |
@@ -62,12 +64,12 @@ jobs:
           unzip -tq "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
           mkdir -p dist
-          cp "$APK" dist/TeacherPortfolio-v1.2.3.apk
-          sha256sum dist/TeacherPortfolio-v1.2.3.apk > dist/TeacherPortfolio-v1.2.3.apk.sha256
-          tar --exclude='./app/src/main/res/font/*' -cJf dist/TeacherPortfolio-v1.2.3-source.tar.xz -C teacher_portfolio .
+          cp "$APK" dist/TeacherPortfolio-v1.2.4.apk
+          sha256sum dist/TeacherPortfolio-v1.2.4.apk > dist/TeacherPortfolio-v1.2.4.apk.sha256
+          tar --exclude='./app/src/main/res/font/*' -cJf dist/TeacherPortfolio-v1.2.4-source.tar.xz -C teacher_portfolio .
       - uses: actions/upload-artifact@v4
         with:
-          name: teacher-portfolio-v1.2.3
+          name: teacher-portfolio-v1.2.4
           path: dist/*
           if-no-files-found: error
           retention-days: 7

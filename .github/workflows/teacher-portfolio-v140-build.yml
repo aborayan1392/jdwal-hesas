@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: Restore clean v1.4.0 source
+      - name: Restore and repair v1.4.0 source
         shell: bash
         run: |
           set -euo pipefail
@@ -23,6 +23,9 @@ jobs:
           echo '9b610eb3207762ee4670878dd3217342d9af5250b8174195b6bb42b66e0de930  /tmp/TeacherPortfolio-v1.4.0-source.tar.xz' | sha256sum -c -
           mkdir teacher_portfolio
           tar -xJf /tmp/TeacherPortfolio-v1.4.0-source.tar.xz -C teacher_portfolio
+          sed -i 's/? :/?:/g' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          sed -i 's/? :/?:/g' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
+          ! grep -R -F -q '? :' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio
           grep -q 'versionName = "1.4.0"' teacher_portfolio/app/build.gradle.kts
           grep -q 'CREATE TABLE attachments' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
           grep -q 'PdfRenderer' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt

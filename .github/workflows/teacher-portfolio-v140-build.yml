@@ -4,65 +4,33 @@ on:
     branches: ['agent/teacher-portfolio-build']
 permissions:
   contents: read
-  actions: read
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: Restore v1.3.3 base
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          curl -L --fail --retry 3 \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/9270378458/zip" \
-            -o /tmp/base-artifact.zip
-          mkdir -p /tmp/base-artifact teacher_portfolio
-          unzip -q /tmp/base-artifact.zip -d /tmp/base-artifact
-          tar -xJf /tmp/base-artifact/TeacherPortfolio-v1.3.3-source.tar.xz -C teacher_portfolio
-          grep -q 'versionName = "1.3.3"' teacher_portfolio/app/build.gradle.kts
-      - name: Apply v1.4.0 upgrade
+      - name: Restore clean v1.4.0 source
         shell: bash
         run: |
           set -euo pipefail
-          cat teacher-portfolio-overrides/v1.4.0-parts/part_00 \
-              teacher-portfolio-overrides/v1.4.0-parts/part_01 \
-              teacher-portfolio-overrides/v1.4.0-parts/part_02 \
-              teacher-portfolio-overrides/v1.4.0-parts/part_03 \
-              teacher-portfolio-overrides/v1.4.0-parts/part_04 \
-              teacher-portfolio-overrides/v1.4.0-parts/part_05 \
-              teacher-portfolio-overrides/v1.4.0-parts/part_06 \
-              teacher-portfolio-overrides/v1.4.0-parts/part_07 \
-              teacher-portfolio-overrides/v1.4.0-parts/part_08 \
-              teacher-portfolio-overrides/v1.4.0-parts/part_09 \
-              teacher-portfolio-overrides/v1.4.0-parts/part_10 \
-              teacher-portfolio-overrides/v1.4.0-parts/part_11 > /tmp/v1.4.0.patch.b64
-          base64 -d /tmp/v1.4.0.patch.b64 > /tmp/v1.4.0.patch
-          python3 - <<'PY'
-          from pathlib import Path
-          s=Path('/tmp/v1.4.0.patch').read_bytes()
-          marker=b'--- a/app/src/main/java/com/aborayan/teacherportfolio/BackupUtils.kt'
-          start=s.find(marker)
-          if start < 0: raise SystemExit('BackupUtils patch section not found')
-          nxt=s.find(b'\n--- a/', start+len(marker))
-          if nxt < 0: raise SystemExit('next patch section not found')
-          Path('/tmp/v1.4.0.filtered.patch').write_bytes(s[:start] + s[nxt+1:])
-          PY
-          cd teacher_portfolio
-          patch -p1 < /tmp/v1.4.0.filtered.patch
-          cp ../teacher-portfolio-overrides/v1.4.0-BackupUtils.kt app/src/main/java/com/aborayan/teacherportfolio/BackupUtils.kt
-          grep -q 'versionName = "1.4.0"' app/build.gradle.kts
-          grep -q 'CREATE TABLE attachments' app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
-          grep -q 'PdfRenderer' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          grep -q 'completionPercent' app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
-          grep -q 'showEvidenceManageDialog' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          grep -q 'showExportOptions' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          test -f app/src/main/java/com/aborayan/teacherportfolio/ZoomImageView.kt
+          cat teacher-portfolio-v140-source/chunk_00 \
+              teacher-portfolio-v140-source/chunk_01 \
+              teacher-portfolio-v140-source/chunk_02 \
+              teacher-portfolio-v140-source/chunk_03 > /tmp/v140.b64
+          test "$(wc -c < /tmp/v140.b64)" -eq 48000
+          base64 -d /tmp/v140.b64 > /tmp/TeacherPortfolio-v1.4.0-source.tar.xz
+          echo '9b610eb3207762ee4670878dd3217342d9af5250b8174195b6bb42b66e0de930  /tmp/TeacherPortfolio-v1.4.0-source.tar.xz' | sha256sum -c -
+          mkdir teacher_portfolio
+          tar -xJf /tmp/TeacherPortfolio-v1.4.0-source.tar.xz -C teacher_portfolio
+          grep -q 'versionName = "1.4.0"' teacher_portfolio/app/build.gradle.kts
+          grep -q 'CREATE TABLE attachments' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
+          grep -q 'PdfRenderer' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q 'completionPercent' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
+          grep -q 'showEvidenceManageDialog' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q 'showExportOptions' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q 'مصمم الغلاف' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          test -f teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/ZoomImageView.kt
       - name: Install Arabic fonts
         shell: bash
         run: |
@@ -86,7 +54,7 @@ jobs:
       - name: Compile and lint
         working-directory: teacher_portfolio
         run: gradle --no-daemon lintDebug assembleDebug
-      - name: Verify APK
+      - name: Verify real v1.4.0 APK
         shell: bash
         run: |
           set -euo pipefail
@@ -94,7 +62,10 @@ jobs:
           test -s "$APK"
           unzip -tq "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
-          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | grep -q "versionName='1.4.0'"
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee /tmp/badging.txt
+          grep -q "versionName='1.4.0'" /tmp/badging.txt
+          NEW_SHA=$(sha256sum "$APK" | awk '{print $1}')
+          test "$NEW_SHA" != 'ef89604b5b2f76bc035b6a742737d308229835bd5b2a64b520d882b8605cb0a5'
           mkdir -p dist
           cp "$APK" dist/TeacherPortfolio-v1.4.0.apk
           sha256sum dist/TeacherPortfolio-v1.4.0.apk > dist/TeacherPortfolio-v1.4.0.apk.sha256

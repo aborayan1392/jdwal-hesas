@@ -1,0 +1,241 @@
+--- a/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
++++ b/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+@@ -19,9 +19,15 @@
+     private lateinit var db: PortfolioDb
+     private lateinit var root: LinearLayout
+     private lateinit var contentHost: FrameLayout
++    private lateinit var topBar: LinearLayout
+     private var sidebar: LinearLayout? = null
+     private var currentSectionId: String? = null
+     private val isTablet by lazy { resources.configuration.smallestScreenWidthDp >= 600 }
++    // القائمة الجانبية الدائمة لا تظهر إلا على الشاشات الواسعة جدًا؛
++    // أما الجوال ومعظم أجهزة التابلت فتستخدم القائمة المنبثقة ذات العمودين مثل المرجع.
++    private val hasPersistentSidebar by lazy { resources.configuration.screenWidthDp >= 1000 }
++    private val uiPrefs by lazy { getSharedPreferences("portfolio_ui", MODE_PRIVATE) }
++    private val textScale: Float get() = if (uiPrefs.getBoolean("large_text", false)) 1.12f else 1f
+     private val ink=Color.rgb(22,35,63); private val inkSoft=Color.rgb(40,55,90)
+     private val paper=Color.rgb(251,248,241); private val gold=Color.rgb(184,134,62)
+     private val goldDeep=Color.rgb(140,95,38); private val emerald=Color.rgb(47,111,94)
+@@ -52,16 +58,19 @@
+     private fun bg(color:Int,r:Int=12,strokeColor:Int?=null,stroke:Int=1)=GradientDrawable().apply {
+         setColor(color); cornerRadius=dp(r).toFloat(); if(strokeColor!=null) setStroke(dp(stroke),strokeColor)
+     }
++    private fun gradientBg(start:Int,end:Int,r:Int=12,strokeColor:Int?=null,stroke:Int=1)=GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(start,end)).apply {
++        cornerRadius=dp(r).toFloat(); if(strokeColor!=null) setStroke(dp(stroke),strokeColor)
++    }
+     private fun tv(text:String,size:Float=14f,color:Int=Color.DKGRAY,bold:Boolean=false)=TextView(this).apply {
+-        this.text=text; textSize=size; setTextColor(color); typeface=android.graphics.Typeface.create(cairo,if(bold)android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
++        this.text=text; textSize=size*textScale; setTextColor(color); typeface=android.graphics.Typeface.create(cairo,if(bold)android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+         gravity=Gravity.RIGHT or Gravity.CENTER_VERTICAL; setPadding(dp(4),dp(4),dp(4),dp(4)); textDirection=View.TEXT_DIRECTION_RTL
+     }
+     private fun btn(text:String,color:Int=gold,textColor:Int=Color.WHITE,onClick:()->Unit)=Button(this).apply {
+-        this.text=text; setTextColor(textColor); textSize=13f; typeface=android.graphics.Typeface.create(cairo,android.graphics.Typeface.BOLD); background=bg(color,10); isAllCaps=false
++        this.text=text; setTextColor(textColor); textSize=13f*textScale; typeface=android.graphics.Typeface.create(cairo,android.graphics.Typeface.BOLD); background=bg(color,10); isAllCaps=false
+         setPadding(dp(12),0,dp(12),0); minHeight=dp(44); setOnClickListener{onClick()}
+     }
+     private fun edit(hint:String, multi:Boolean=false)=EditText(this).apply {
+-        this.hint=hint; textSize=14f; setTextColor(Color.DKGRAY); setHintTextColor(Color.GRAY); typeface=cairo; background=bg(Color.WHITE,9,line,1)
++        this.hint=hint; textSize=14f*textScale; setTextColor(Color.DKGRAY); setHintTextColor(Color.GRAY); typeface=cairo; background=bg(Color.WHITE,9,line,1)
+         setPadding(dp(12),dp(9),dp(12),dp(9)); gravity=Gravity.RIGHT or Gravity.TOP; textDirection=View.TEXT_DIRECTION_RTL
+         if(multi){ minLines=3; maxLines=6 } else setSingleLine(true)
+     }
+@@ -70,7 +79,7 @@
+     }
+ 
+     private fun closeButton(label:String="إغلاق",onClick:()->Unit)=btn("✕  $label",Color.WHITE,ink,onClick).apply {
+-        background=bg(Color.WHITE,12,line,1); textSize=13f
++        background=bg(Color.WHITE,12,line,1); textSize=13f*textScale
+     }
+ 
+     private fun buildShell() {
+@@ -78,9 +87,10 @@
+         if(Build.VERSION.SDK_INT>=30) root.setOnApplyWindowInsetsListener { v,i -> val s=i.getInsets(WindowInsets.Type.systemBars());v.setPadding(s.left,s.top,s.right,s.bottom);i }
+         else root.setOnApplyWindowInsetsListener { v,i -> v.setPadding(i.systemWindowInsetLeft,i.systemWindowInsetTop,i.systemWindowInsetRight,i.systemWindowInsetBottom);i }
+ 
+-        val top=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(10),dp(8),dp(10),dp(8)); setBackgroundColor(ink) }
++        topBar=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(10),dp(8),dp(10),dp(8)); setBackgroundColor(ink) }
++        val top=topBar
+         val brandRow=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
+-        if(!isTablet) brandRow.addView(btn("☰",inkSoft,Color.WHITE){ showNavigationDialog() },LinearLayout.LayoutParams(dp(52),dp(48)).apply{marginEnd=dp(8)})
++        if(!hasPersistentSidebar) brandRow.addView(btn("☰",inkSoft,Color.WHITE){ showNavigationDialog() },LinearLayout.LayoutParams(dp(52),dp(48)).apply{marginEnd=dp(8)})
+         val brand=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; addView(tv("ملف إنجاز المعلم",if(isTablet)20f else 18f,Color.WHITE,true)); addView(tv("سجل مهني موثّق بالأدلة والشواهد",if(isTablet)11f else 10.5f,Color.rgb(232,217,184))) }
+         brandRow.addView(brand,LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.WRAP_CONTENT,1f))
+         if(isTablet){
+@@ -105,7 +115,7 @@
+         root.addView(top,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT))
+ 
+         val body=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
+-        if(isTablet){ sidebar=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(inkSoft)}; body.addView(sidebar,LinearLayout.LayoutParams(dp(280),LinearLayout.LayoutParams.MATCH_PARENT)); refreshSidebar() }
++        if(hasPersistentSidebar){ sidebar=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(inkSoft)}; body.addView(sidebar,LinearLayout.LayoutParams(dp(280),LinearLayout.LayoutParams.MATCH_PARENT)); refreshSidebar() }
+         contentHost=FrameLayout(this)
+         body.addView(contentHost,LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.MATCH_PARENT,1f))
+         root.addView(body,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,0,1f))
+@@ -128,10 +138,127 @@
+     }
+ 
+     private fun showNavigationDialog() {
+-        val items= mutableListOf("الغلاف والبيانات الأساسية"); val sections=db.getSections(false); items.addAll(sections.map{it.title});items += "إضافة قسم مخصص";items += "إعدادات الأقسام"
+-        AlertDialog.Builder(this).setTitle("أقسام ملف الإنجاز").setItems(items.toTypedArray()){d,which -> when {
+-            which==0 -> showProfile(); which in 1..sections.size -> showSection(sections[which-1].id); which==sections.size+1 -> showSectionDialog(null); else -> showSectionManager()
+-        };d.dismiss()}.setNegativeButton("✕ إغلاق",null).show().also{ styleDialog(it) }
++        val sections=db.getSections(false)
++        lateinit var popup: PopupWindow
++        val menu=LinearLayout(this).apply {
++            orientation=LinearLayout.VERTICAL
++            layoutDirection=View.LAYOUT_DIRECTION_RTL
++            setBackgroundColor(Color.rgb(44,70,111))
++            setPadding(dp(10),dp(10),dp(10),dp(10))
++        }
++
++        // زر إغلاق واضح لكل قائمة تُفتح.
++        val closeRow=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
++        closeRow.addView(tv("أقسام ملف الإنجاز",16f,Color.WHITE,true),LinearLayout.LayoutParams(0,dp(44),1f))
++        closeRow.addView(btn("✕  إغلاق",Color.TRANSPARENT,Color.WHITE){popup.dismiss()}.apply{
++            background=bg(Color.TRANSPARENT,11,Color.rgb(116,140,183),1)
++        },LinearLayout.LayoutParams(dp(112),dp(42)))
++        menu.addView(closeRow,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(48)))
++
++        val coverActive=currentSectionId==null
++        val cover=LinearLayout(this).apply {
++            orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL; layoutDirection=View.LAYOUT_DIRECTION_RTL
++            setPadding(dp(16),0,dp(16),0)
++            background=if(coverActive) gradientBg(Color.rgb(188,216,255),Color.rgb(87,143,238),14,Color.WHITE,2) else bg(Color.rgb(55,80,123),13)
++            setOnClickListener{ popup.dismiss(); showProfile() }
++        }
++        cover.addView(tv("▣",22f,ink,true).apply{gravity=Gravity.CENTER},LinearLayout.LayoutParams(dp(42),dp(58)))
++        cover.addView(tv("الغلاف والبيانات الأساسية",15f,if(coverActive) ink else Color.WHITE,true),LinearLayout.LayoutParams(0,dp(58),1f))
++        menu.addView(cover,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(62)).apply{bottomMargin=dp(8)})
++
++        val scroll=ScrollView(this).apply{isFillViewport=true;overScrollMode=View.OVER_SCROLL_IF_CONTENT_SCROLLS}
++        val gridBox=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
++        var i=0
++        while(i<sections.size){
++            val row=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;layoutDirection=View.LAYOUT_DIRECTION_RTL}
++            repeat(2){col->
++                val idx=i+col
++                if(idx<sections.size){
++                    val sec=sections[idx]
++                    val active=currentSectionId==sec.id
++                    val count=db.getEvidence(sec.id).size
++                    val card=menuSectionCard(idx+1,sec.title,count,active){ popup.dismiss(); showSection(sec.id) }
++                    row.addView(card,LinearLayout.LayoutParams(0,dp(if(uiPrefs.getBoolean("compact_menu",false)) 48 else 54),1f).apply{
++                        if(col==0) marginEnd=dp(3) else marginStart=dp(3)
++                    })
++                }else{
++                    row.addView(Space(this),LinearLayout.LayoutParams(0,dp(54),1f))
++                }
++            }
++            gridBox.addView(row,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT).apply{bottomMargin=dp(6)})
++            i+=2
++        }
++
++        val addCustom=TextView(this).apply{
++            text="⊕  إضافة قسم مخصص"; textSize=14f*textScale; setTextColor(Color.rgb(215,222,237)); typeface=android.graphics.Typeface.create(cairo,android.graphics.Typeface.NORMAL)
++            gravity=Gravity.CENTER; textDirection=View.TEXT_DIRECTION_RTL
++            background=GradientDrawable().apply{setColor(Color.TRANSPARENT);cornerRadius=dp(12).toFloat();setStroke(dp(2),Color.rgb(125,145,180),dp(5).toFloat(),dp(4).toFloat())}
++            setOnClickListener{popup.dismiss();showSectionDialog(null)}
++        }
++        gridBox.addView(addCustom,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(54)).apply{topMargin=dp(2);bottomMargin=dp(10)})
++        scroll.addView(gridBox)
++        menu.addView(scroll,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,0,1f))
++
++        val bottom=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(0,dp(8),0,0)}
++        val settings=btn("☀  إعدادات الأقسام",Color.TRANSPARENT,ink){popup.dismiss();showSectionManager()}.apply{
++            textSize=15f*textScale;background=gradientBg(Color.rgb(188,216,255),Color.rgb(87,143,238),13,Color.rgb(207,224,255),1)
++        }
++        bottom.addView(settings,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(58)).apply{bottomMargin=dp(8)})
++        val appearance=btn("🎨  المظهر والتخصيص",Color.TRANSPARENT,ink){popup.dismiss();showAppearanceDialog()}.apply{
++            textSize=15f*textScale;background=gradientBg(Color.rgb(188,216,255),Color.rgb(87,143,238),13,Color.rgb(207,224,255),1)
++        }
++        bottom.addView(appearance,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(58)))
++        menu.addView(bottom)
++
++        val desiredHeight=contentHost.height.coerceAtLeast(dp(420))
++        popup=PopupWindow(menu,ViewGroup.LayoutParams.MATCH_PARENT,desiredHeight,true).apply{
++            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
++            isOutsideTouchable=true
++            elevation=dp(16).toFloat()
++            inputMethodMode=PopupWindow.INPUT_METHOD_NOT_NEEDED
++            softInputMode=WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
++        }
++        popup.showAsDropDown(topBar,0,0,Gravity.END)
++    }
++
++    private fun menuSectionCard(number:Int,title:String,count:Int,active:Boolean,onClick:()->Unit):View {
++        val card=LinearLayout(this).apply{
++            orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;layoutDirection=View.LAYOUT_DIRECTION_RTL
++            setPadding(dp(10),0,dp(8),0);setOnClickListener{onClick()}
++            background=if(active) gradientBg(Color.rgb(188,216,255),Color.rgb(87,143,238),11,Color.WHITE,1) else bg(Color.rgb(55,80,123),11)
++        }
++        card.addView(tv(number.toString(),11f,if(active)ink else Color.rgb(205,214,230)),LinearLayout.LayoutParams(dp(24),LinearLayout.LayoutParams.MATCH_PARENT))
++        card.addView(tv(title,12f,if(active)ink else Color.rgb(238,241,247),active).apply{maxLines=2;ellipsize=TextUtils.TruncateAt.END},LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.MATCH_PARENT,1f))
++        val badge=tv(count.toString(),11f,Color.WHITE).apply{gravity=Gravity.CENTER;background=bg(Color.rgb(91,113,153),30);setPadding(0,0,0,0)}
++        card.addView(badge,LinearLayout.LayoutParams(dp(34),dp(28)))
++        return card
++    }
++
++    private fun showAppearanceDialog(){
++        val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(14),dp(4),dp(14),0)}
++        box.addView(tv("حجم النص",13f,ink,true))
++        val textGroup=RadioGroup(this).apply{orientation=RadioGroup.VERTICAL}
++        val normal=RadioButton(this).apply{text="قياسي";typeface=cairo;textSize=14f}
++        val large=RadioButton(this).apply{text="كبير وواضح";typeface=cairo;textSize=14f}
++        textGroup.addView(normal);textGroup.addView(large)
++        if(uiPrefs.getBoolean("large_text",false)) large.isChecked=true else normal.isChecked=true
++        box.addView(textGroup)
++        box.addView(tv("كثافة قائمة الأقسام",13f,ink,true).apply{setPadding(dp(4),dp(12),dp(4),dp(4))})
++        val menuGroup=RadioGroup(this).apply{orientation=RadioGroup.VERTICAL}
++        val comfortable=RadioButton(this).apply{text="مريحة";typeface=cairo;textSize=14f}
++        val compact=RadioButton(this).apply{text="مدمجة لعرض أقسام أكثر";typeface=cairo;textSize=14f}
++        menuGroup.addView(comfortable);menuGroup.addView(compact)
++        if(uiPrefs.getBoolean("compact_menu",false)) compact.isChecked=true else comfortable.isChecked=true
++        box.addView(menuGroup)
++        val d=AlertDialog.Builder(this).setTitle("المظهر والتخصيص").setView(box).setNegativeButton("✕ إغلاق",null).setPositiveButton("تطبيق",null).create()
++        d.setOnShowListener{
++            styleDialog(d)
++            d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{
++                uiPrefs.edit().putBoolean("large_text",large.isChecked).putBoolean("compact_menu",compact.isChecked).apply()
++                d.dismiss();recreate()
++            }
++        }
++        d.show()
+     }
+ 
+     private fun setScreen(view:View) { contentHost.removeAllViews();contentHost.addView(view,FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,FrameLayout.LayoutParams.MATCH_PARENT));refreshSidebar() }
+--- a/app/src/main/java/com/aborayan/teacherportfolio/BackupUtils.kt
++++ b/app/src/main/java/com/aborayan/teacherportfolio/BackupUtils.kt
+@@ -38,9 +38,18 @@
+             while(true) {
+                 val entry=zin.nextEntry ?: break
+                 val safe=entry.name.replace('\\','/')
+-                if(safe=="data.json") jsonText=zin.bufferedReader(Charsets.UTF_8).readText()
+-                else if(safe.startsWith("userfiles/") && !safe.contains("..")) {
+-                    val rel=safe.removePrefix("userfiles/"); val dest=File(temp,rel); dest.parentFile?.mkdirs(); FileOutputStream(dest).use { zin.copyTo(it) }
++                if(safe=="data.json") {
++                    val out=ByteArrayOutputStream()
++                    zin.copyTo(out)
++                    jsonText=out.toString(Charsets.UTF_8.name())
++                } else if(safe.startsWith("userfiles/") && !safe.contains("..")) {
++                    val rel=safe.removePrefix("userfiles/")
++                    val dest=File(temp,rel)
++                    val canonicalRoot=temp.canonicalFile
++                    val canonicalDest=dest.canonicalFile
++                    if(!canonicalDest.path.startsWith(canonicalRoot.path + File.separator)) error("مسار غير صالح داخل النسخة الاحتياطية")
++                    canonicalDest.parentFile?.mkdirs()
++                    FileOutputStream(canonicalDest).use { zin.copyTo(it) }
+                 }
+                 zin.closeEntry()
+             }
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -11,8 +11,8 @@
+         applicationId = "com.aborayan.teacherportfolio"
+         minSdk = 26
+         targetSdk = 35
+-        versionCode = 1
+-        versionName = "1.0.0"
++        versionCode = 2
++        versionName = "1.1.0"
+     }
+ 
+     signingConfigs {

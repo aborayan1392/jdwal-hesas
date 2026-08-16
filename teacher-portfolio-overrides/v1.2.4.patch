@@ -1,0 +1,110 @@
+diff -ruN TeacherPortfolioKotlin_v1.2.3/app/build.gradle.kts TeacherPortfolioKotlin_v1.2.4/app/build.gradle.kts
+--- TeacherPortfolioKotlin_v1.2.3/app/build.gradle.kts	2026-08-16 19:21:06.000000000 +0000
++++ TeacherPortfolioKotlin_v1.2.4/app/build.gradle.kts	2026-08-16 19:31:53.446348016 +0000
+@@ -11,8 +11,8 @@
+         applicationId = "com.aborayan.teacherportfolio"
+         minSdk = 26
+         targetSdk = 35
+-        versionCode = 6
+-        versionName = "1.2.3"
++        versionCode = 7
++        versionName = "1.2.4"
+     }
+ 
+     signingConfigs {
+diff -ruN TeacherPortfolioKotlin_v1.2.3/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt TeacherPortfolioKotlin_v1.2.4/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+--- TeacherPortfolioKotlin_v1.2.3/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt	2026-08-16 19:21:06.000000000 +0000
++++ TeacherPortfolioKotlin_v1.2.4/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt	2026-08-16 19:31:33.285593560 +0000
+@@ -411,7 +411,6 @@
+         info.addView(typeChip,LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,dp(30)).apply{bottomMargin=dp(4)})
+         info.addView(tv(e.title,17f,ink,true).apply{maxLines=2;ellipsize=TextUtils.TruncateAt.END},LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT))
+         if(e.description.isNotBlank()) info.addView(tv(e.description,12f,muted).apply{maxLines=3;ellipsize=TextUtils.TruncateAt.END},LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT).apply{topMargin=dp(2)})
+-        if(e.fileName.isNotBlank()) info.addView(tv("📎 ${e.fileName}",10.5f,Color.rgb(88,94,108)).apply{maxLines=1;ellipsize=TextUtils.TruncateAt.MIDDLE},LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT).apply{topMargin=dp(4)})
+         if(e.link.isNotBlank() && e.filePath.isBlank()) info.addView(tv("🔗 رابط مرفق",10.5f,emerald,true),LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT).apply{topMargin=dp(4)})
+         body.addView(info,LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.WRAP_CONTENT,1f))
+         card.addView(body)
+diff -ruN TeacherPortfolioKotlin_v1.2.3/app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt TeacherPortfolioKotlin_v1.2.4/app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
+--- TeacherPortfolioKotlin_v1.2.3/app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt	2026-08-16 19:21:06.000000000 +0000
++++ TeacherPortfolioKotlin_v1.2.4/app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt	2026-08-16 19:31:33.285791285 +0000
+@@ -116,6 +116,24 @@
+             return layout.height.toFloat()
+         }
+ 
++        private fun drawCenteredNumber(
++            canvas: Canvas,
++            text: String,
++            rect: RectF,
++            size: Float,
++            color: Int
++        ) {
++            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
++                this.color = color
++                textSize = size
++                typeface = Typeface.create(tf, Typeface.BOLD)
++                textAlign = Paint.Align.CENTER
++            }
++            val fm = p.fontMetrics
++            val baseline = rect.centerY() - (fm.ascent + fm.descent) / 2f
++            canvas.drawText(text, rect.centerX(), baseline, p)
++        }
++
+         private fun startPage(title: String, subtitle: String = "", numberLabel: String = ""): PdfDocument.Page {
+             pageNo++
+             val page = pdf.startPage(PdfDocument.PageInfo.Builder(W, H, pageNo).create())
+@@ -131,7 +149,7 @@
+             if (numberLabel.isNotBlank()) {
+                 val r = RectF(M, 19f, M + 44f, 63f)
+                 c.drawRoundRect(r, 12f, 12f, paint(GOLD))
+-                drawText(c, numberLabel, M + 5f, 27f, 34f, 16f, Color.WHITE, true, 1, Layout.Alignment.ALIGN_CENTER)
++                drawCenteredNumber(c, numberLabel, r, 17f, Color.WHITE)
+             }
+             return page
+         }
+@@ -145,15 +163,7 @@
+             }
+             val pageBadge = RectF(W / 2f - 18f, H - 31f, W / 2f + 18f, H - 9f)
+             c.drawRoundRect(pageBadge, 9f, 9f, paint(GOLD_LIGHT))
+-            val pn = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+-                color = GOLD
+-                textSize = 12.5f
+-                typeface = Typeface.create(tf, Typeface.BOLD)
+-                textAlign = Paint.Align.CENTER
+-            }
+-            val fm = pn.fontMetrics
+-            val baseline = pageBadge.centerY() - (fm.ascent + fm.descent) / 2f
+-            c.drawText(pageNo.toString(), pageBadge.centerX(), baseline, pn)
++            drawCenteredNumber(c, pageNo.toString(), pageBadge, 13.5f, GOLD)
+             pdf.finishPage(page)
+         }
+ 
+@@ -259,7 +269,7 @@
+                 c.drawRoundRect(r, 11f, 11f, paint(LINE, 1f, Paint.Style.STROKE))
+                 val badge = RectF(r.right - 44, r.top + 12, r.right - 12, r.top + 44)
+                 c.drawRoundRect(badge, 9f, 9f, paint(INK_SOFT))
+-                drawText(c, (idx + 1).toString(), badge.left + 4, badge.top + 5, badge.width() - 8, 15f, Color.WHITE, true, 1, Layout.Alignment.ALIGN_CENTER)
++                drawCenteredNumber(c, (idx + 1).toString(), badge, 16f, Color.WHITE)
+                 drawText(c, s.title, r.left + 12, r.top + 10, r.width() - 70, 11.5f, INK, true, 2)
+                 drawText(c, "${db.getEvidence(s.id).size} شاهد", r.left + 12, r.bottom - 24, r.width() - 70, 9.5f, GOLD, true, 1)
+             }
+@@ -321,7 +331,7 @@
+             val badgeW = 26f
+             val badge = RectF(rect.left + pad, rect.top + pad, rect.left + pad + badgeW, rect.top + pad + 24f)
+             canvas.drawRoundRect(badge, 8f, 8f, paint(GOLD))
+-            drawText(canvas, number.toString(), badge.left + 2f, badge.top + 5f, badge.width() - 4f, 10f, Color.WHITE, true, 1, Layout.Alignment.ALIGN_CENTER)
++            drawCenteredNumber(canvas, number.toString(), badge, 11.5f, Color.WHITE)
+ 
+             var y = rect.top + pad
+             val titleLeft = rect.left + pad + badgeW + 8f
+@@ -344,12 +354,6 @@
+                 y += drawText(canvas, e.description, rect.left + pad, y, innerW, 8.8f, MUTED, false, 2) + 6f
+             }
+ 
+-            if (e.fileName.isNotBlank()) {
+-                val attachRect = RectF(rect.left + pad, y, rect.right - pad, y + 22f)
+-                canvas.drawRoundRect(attachRect, 7f, 7f, paint(GOLD_LIGHT))
+-                drawText(canvas, "المرفق: ${e.fileName}", attachRect.left + 6, attachRect.top + 5, attachRect.width() - 12, 8f, INK_SOFT, true, 1)
+-                y += 28f
+-            }
+             if (e.link.isNotBlank()) {
+                 val linkRect = RectF(rect.left + pad, y, rect.right - pad, y + 22f)
+                 canvas.drawRoundRect(linkRect, 7f, 7f, paint(Color.rgb(234, 243, 240)))

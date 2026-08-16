@@ -1,0 +1,50 @@
+--- a/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
++++ b/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+@@ -66,7 +66,11 @@
+         if(multi){ minLines=3; maxLines=6 } else setSingleLine(true)
+     }
+     private fun sectionTitle(title:String,sub:String="")=LinearLayout(this).apply {
+-        orientation=LinearLayout.VERTICAL; setPadding(0,0,0,dp(16)); addView(tv(title,26f,ink,true)); if(sub.isNotBlank()) addView(tv(sub,13f,muted,false))
++        orientation=LinearLayout.VERTICAL; setPadding(0,0,0,dp(12)); addView(tv(title,if(isTablet)26f else 22f,ink,true)); if(sub.isNotBlank()) addView(tv(sub,if(isTablet)13f else 12f,muted,false))
++    }
++
++    private fun closeButton(label:String="إغلاق",onClick:()->Unit)=btn("✕  $label",Color.WHITE,ink,onClick).apply {
++        background=bg(Color.WHITE,12,line,1); textSize=13f
+     }
+ 
+     private fun buildShell() {
+@@ -74,17 +78,30 @@
+         if(Build.VERSION.SDK_INT>=30) root.setOnApplyWindowInsetsListener { v,i -> val s=i.getInsets(WindowInsets.Type.systemBars());v.setPadding(s.left,s.top,s.right,s.bottom);i }
+         else root.setOnApplyWindowInsetsListener { v,i -> v.setPadding(i.systemWindowInsetLeft,i.systemWindowInsetTop,i.systemWindowInsetRight,i.systemWindowInsetBottom);i }
+ 
+-        val top=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL; setPadding(dp(10),dp(8),dp(10),dp(8)); setBackgroundColor(ink) }
+-        if(!isTablet) top.addView(btn("☰",inkSoft,Color.WHITE){ showNavigationDialog() },LinearLayout.LayoutParams(dp(48),dp(48)))
+-        val brand=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; addView(tv("ملف إنجاز المعلم",18f,Color.WHITE,true)); addView(tv("سجل مهني موثّق بالأدلة والشواهد",10.5f,Color.rgb(232,217,184))) }
+-        top.addView(brand,LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.WRAP_CONTENT,1f))
+-        val backup=btn("نسخ",inkSoft,Color.WHITE){ createBackup() }; backup.setCompoundDrawablesWithIntrinsicBounds(0,0,android.R.drawable.ic_menu_save,0)
+-        val restore=btn("استعادة",inkSoft,Color.WHITE){ restoreBackup() }; restore.setCompoundDrawablesWithIntrinsicBounds(0,0,android.R.drawable.ic_menu_upload,0)
+-        val pdf=btn("PDF",gold,Color.WHITE){ createPdf() }; 
+-        if(!isTablet){ backup.text=""; restore.text=""; pdf.text="PDF" }
+-        top.addView(backup,LinearLayout.LayoutParams(if(isTablet)dp(92) else dp(48),dp(44)).apply{marginStart=dp(5)})
+-        top.addView(restore,LinearLayout.LayoutParams(if(isTablet)dp(102) else dp(48),dp(44)).apply{marginStart=dp(5)})
+-        top.addView(pdf,LinearLayout.LayoutParams(if(isTablet)dp(78) else dp(48),dp(44)))
++        val top=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(10),dp(8),dp(10),dp(8)); setBackgroundColor(ink) }
++        val brandRow=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
++        if(!isTablet) brandRow.addView(btn("☰",inkSoft,Color.WHITE){ showNavigationDialog() },LinearLayout.LayoutParams(dp(52),dp(48)).apply{marginEnd=dp(8)})
++        val brand=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; addView(tv("ملف إنجاز المعلم",if(isTablet)20f else 18f,Color.WHITE,true)); addView(tv("سجل مهني موثّق بالأدلة والشواهد",if(isTablet)11f else 10.5f,Color.rgb(232,217,184))) }
++        brandRow.addView(brand,LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.WRAP_CONTENT,1f))
++        if(isTablet){
++            val backup=btn("نسخ",inkSoft,Color.WHITE){ createBackup() }.apply{setCompoundDrawablesWithIntrinsicBounds(0,0,android.R.drawable.ic_menu_save,0)}
++            val restore=btn("استعادة",inkSoft,Color.WHITE){ restoreBackup() }.apply{setCompoundDrawablesWithIntrinsicBounds(0,0,android.R.drawable.ic_menu_upload,0)}
++            val pdf=btn("PDF",gold,Color.WHITE){ createPdf() }
++            brandRow.addView(backup,LinearLayout.LayoutParams(dp(92),dp(44)).apply{marginStart=dp(5)})
++            brandRow.addView(restore,LinearLayout.LayoutParams(dp(102),dp(44)).apply{marginStart=dp(5)})
++            brandRow.addView(pdf,LinearLayout.LayoutParams(dp(78),dp(44)))
++        }
++        top.addView(brandRow,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT))
++        if(!isTablet){
++            val actions=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER;setPadding(0,dp(8),0,0)}
++            val backup=btn("نسخ",inkSoft,Color.WHITE){ createBackup() }.apply{setCompoundDrawablesWithIntrinsicBounds(0,0,android.R.drawable.ic_menu_save,0)}
++            val restore=btn("استعادة",inkSoft,Color.WHITE){ restoreBackup() }.apply{setCompoundDrawablesWithIntrinsicBounds(0,0,android.R.drawable.ic_menu_upload,0)}
++            val pdf=btn("PDF",gold,Color.WHITE){ createPdf() }
++      

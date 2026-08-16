@@ -1,0 +1,95 @@
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -11,8 +11,8 @@
+         applicationId = "com.aborayan.teacherportfolio"
+         minSdk = 26
+         targetSdk = 35
+-        versionCode = 4
+-        versionName = "1.2.1"
++        versionCode = 5
++        versionName = "1.2.2"
+     }
+ 
+     signingConfigs {
+--- a/app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
++++ b/app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
+@@ -131,7 +131,7 @@
+             if (numberLabel.isNotBlank()) {
+                 val r = RectF(M, 19f, M + 44f, 63f)
+                 c.drawRoundRect(r, 12f, 12f, paint(GOLD))
+-                drawText(c, numberLabel, M + 5f, 29f, 34f, 14f, Color.WHITE, true, 1)
++                drawText(c, numberLabel, M + 5f, 27f, 34f, 16f, Color.WHITE, true, 1, Layout.Alignment.ALIGN_CENTER)
+             }
+             return page
+         }
+@@ -143,13 +143,17 @@
+             if (footer.isNotBlank()) {
+                 drawText(c, footer, M, H - 28f, 350f, 8.5f, MUTED, false, 1)
+             }
++            val pageBadge = RectF(W / 2f - 18f, H - 31f, W / 2f + 18f, H - 9f)
++            c.drawRoundRect(pageBadge, 9f, 9f, paint(GOLD_LIGHT))
+             val pn = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                 color = GOLD
+-                textSize = 9f
++                textSize = 12.5f
+                 typeface = Typeface.create(tf, Typeface.BOLD)
+-                textAlign = Paint.Align.RIGHT
++                textAlign = Paint.Align.CENTER
+             }
+-            c.drawText(pageNo.toString(), W - M, H - 19f, pn)
++            val fm = pn.fontMetrics
++            val baseline = pageBadge.centerY() - (fm.ascent + fm.descent) / 2f
++            c.drawText(pageNo.toString(), pageBadge.centerX(), baseline, pn)
+             pdf.finishPage(page)
+         }
+ 
+@@ -221,8 +225,8 @@
+                 val r = RectF(x, statsY, x + statW, 618f)
+                 c.drawRoundRect(r, 14f, 14f, paint(Color.WHITE))
+                 c.drawRoundRect(r, 14f, 14f, paint(LINE, 1f, Paint.Style.STROKE))
+-                drawText(c, n.toString(), x + 10, statsY + 18, statW - 20, 25f, GOLD, true, 1)
+-                drawText(c, label, x + 10, statsY + 58, statW - 20, 10f, MUTED, true, 1)
++                drawText(c, n.toString(), x + 10, statsY + 18, statW - 20, 25f, GOLD, true, 1, Layout.Alignment.ALIGN_CENTER)
++                drawText(c, label, x + 10, statsY + 58, statW - 20, 10f, MUTED, true, 1, Layout.Alignment.ALIGN_CENTER)
+             }
+             stat(M, sections.size, "إجمالي الأقسام")
+             stat(M + statW + gap, filledCount, "أقسام مكتملة")
+@@ -255,7 +259,7 @@
+                 c.drawRoundRect(r, 11f, 11f, paint(LINE, 1f, Paint.Style.STROKE))
+                 val badge = RectF(r.right - 44, r.top + 12, r.right - 12, r.top + 44)
+                 c.drawRoundRect(badge, 9f, 9f, paint(INK_SOFT))
+-                drawText(c, (idx + 1).toString(), badge.left + 5, badge.top + 7, badge.width() - 10, 11f, Color.WHITE, true, 1)
++                drawText(c, (idx + 1).toString(), badge.left + 4, badge.top + 5, badge.width() - 8, 15f, Color.WHITE, true, 1, Layout.Alignment.ALIGN_CENTER)
+                 drawText(c, s.title, r.left + 12, r.top + 10, r.width() - 70, 11.5f, INK, true, 2)
+                 drawText(c, "${db.getEvidence(s.id).size} شاهد", r.left + 12, r.bottom - 24, r.width() - 70, 9.5f, GOLD, true, 1)
+             }
+@@ -336,14 +340,8 @@
+             }
+             y += 18f
+ 
+-            val descText = when {
+-                e.description.isNotBlank() -> e.description
+-                e.fileName.isNotBlank() -> e.fileName
+-                e.link.isNotBlank() -> e.link
+-                else -> ""
+-            }
+-            if (descText.isNotBlank()) {
+-                y += drawText(canvas, descText, rect.left + pad, y, innerW, 8.8f, MUTED, false, 2) + 6f
++            if (e.description.isNotBlank()) {
++                y += drawText(canvas, e.description, rect.left + pad, y, innerW, 8.8f, MUTED, false, 2) + 6f
+             }
+ 
+             if (e.fileName.isNotBlank()) {
+@@ -352,6 +350,12 @@
+                 drawText(canvas, "المرفق: ${e.fileName}", attachRect.left + 6, attachRect.top + 5, attachRect.width() - 12, 8f, INK_SOFT, true, 1)
+                 y += 28f
+             }
++            if (e.link.isNotBlank()) {
++                val linkRect = RectF(rect.left + pad, y, rect.right - pad, y + 22f)
++                canvas.drawRoundRect(linkRect, 7f, 7f, paint(Color.rgb(234, 243, 240)))
++                drawText(canvas, "الرابط: ${e.link}", linkRect.left + 6, linkRect.top + 5, linkRect.width() - 12, 8f, GREEN, true, 1)
++                y += 28f
++            }
+ 
+             val imageRect = RectF(rect.left + pad, y, rect.right - pad, rect.bottom - pad)
+             val imageFile = if (isImage(e) && e.filePath.isNotBlank()) File(context.filesDir, e.filePath) else null

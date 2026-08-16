@@ -1,0 +1,27 @@
+             r2.addView(Space(this),LinearLayout.LayoutParams(0,dp(92),1f))
+             stats.addView(r2); box.addView(stats)
+@@ -509,9 +516,9 @@
+         }
+         body.addView(visual,LinearLayout.LayoutParams(previewW,previewH).apply{marginEnd=dp(12)})
+ 
+-        val info=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.RIGHT;layoutDirection=View.LAYOUT_DIRECTION_RTL}
++        val info=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.END;layoutDirection=View.LAYOUT_DIRECTION_RTL}
+         val typeChip=tv(listOf(e.type,e.date).filter{it.isNotBlank()}.joinToString("  •  "),10.5f,goldDeep,true).apply{
+-            gravity=Gravity.CENTER_VERTICAL or Gravity.RIGHT;background=bg(Color.rgb(247,241,226),18);setPadding(dp(10),dp(3),dp(10),dp(3))
++            gravity=Gravity.CENTER_VERTICAL or Gravity.END;background=bg(Color.rgb(247,241,226),18);setPadding(dp(10),dp(3),dp(10),dp(3))
+         }
+         info.addView(typeChip,LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,dp(30)).apply{bottomMargin=dp(4)})
+         info.addView(tv(e.title,17f,ink,true).apply{maxLines=2;ellipsize=TextUtils.TruncateAt.END},LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT))
+@@ -537,8 +544,8 @@
+         val spinner=Spinner(this)
+         pendingEvidenceTypeSpinner=spinner
+         val ad=object:ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,Defaults.evidenceTypes){
+-            override fun getView(position:Int,convertView:View?,parent:ViewGroup):View = super.getView(position,convertView,parent).apply{if(this is TextView){typeface=cairo;textSize=14f;gravity=Gravity.RIGHT or Gravity.CENTER_VERTICAL;textDirection=View.TEXT_DIRECTION_RTL}}
+-            override fun getDropDownView(position:Int,convertView:View?,parent:ViewGroup):View = super.getDropDownView(position,convertView,parent).apply{if(this is TextView){typeface=cairo;textSize=14f;gravity=Gravity.RIGHT or Gravity.CENTER_VERTICAL;textDirection=View.TEXT_DIRECTION_RTL;setPadding(dp(14),dp(10),dp(14),dp(10))}}
++            override fun getView(position:Int,convertView:View?,parent:ViewGroup):View = super.getView(position,convertView,parent).apply{if(this is TextView){typeface=cairo;textSize=14f;gravity=Gravity.END or Gravity.CENTER_VERTICAL;textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL}}
++            override fun getDropDownView(position:Int,convertView:View?,parent:ViewGroup):View = super.getDropDownView(position,convertView,parent).apply{if(this is TextView){typeface=cairo;textSize=14f;gravity=Gravity.END or Gravity.CENTER_VERTICAL;textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL;setPadding(dp(14),dp(10),dp(14),dp(10))}}
+         }
+         spinner.adapter=ad
+         existing?.let{spinner.setSelection(Defaults.evidenceTypes.indexOf(it.type).coerceAtLeast(0))}
+@@ -731,7 +738,7 @@
+         frame.addView(image,FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,FrameLayout.LayoutParams.MATCH_PARENT))

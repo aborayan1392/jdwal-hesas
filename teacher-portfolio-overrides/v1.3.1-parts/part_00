@@ -1,0 +1,75 @@
+--- a/app/build.gradle.kts	2026-08-16 20:25:54.000000000 +0000
++++ b/app/build.gradle.kts	2026-08-16 20:43:09.563646856 +0000
+@@ -11,8 +11,8 @@
+         applicationId = "com.aborayan.teacherportfolio"
+         minSdk = 26
+         targetSdk = 35
+-        versionCode = 8
+-        versionName = "1.3.0"
++        versionCode = 9
++        versionName = "1.3.1"
+     }
+ 
+     signingConfigs {
+--- a/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt	2026-08-16 20:25:54.000000000 +0000
++++ b/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt	2026-08-16 20:44:03.175031410 +0000
+@@ -59,6 +59,7 @@
+         super.onCreate(savedInstanceState)
+         cairo=AppFonts.typeface(this)
+         db=PortfolioDb(this)
++        window.decorView.layoutDirection=View.LAYOUT_DIRECTION_RTL
+         window.statusBarColor=AppearanceSettings.headerColor(this); window.navigationBarColor=AppearanceSettings.headerColor(this)
+         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+         buildShell(); showProfile()
+@@ -73,15 +74,15 @@
+     }
+     private fun tv(text:String,size:Float=14f,color:Int=Color.DKGRAY,bold:Boolean=false)=TextView(this).apply {
+         this.text=text; textSize=size*textScale; setTextColor(color); typeface=android.graphics.Typeface.create(cairo,if(bold)android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+-        gravity=Gravity.RIGHT or Gravity.CENTER_VERTICAL; setPadding(dp(4),dp(4),dp(4),dp(4)); textDirection=View.TEXT_DIRECTION_RTL
++        gravity=Gravity.END or Gravity.CENTER_VERTICAL; setPadding(dp(4),dp(4),dp(4),dp(4)); layoutDirection=View.LAYOUT_DIRECTION_RTL; textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL
+     }
+     private fun btn(text:String,color:Int=gold,textColor:Int=Color.WHITE,onClick:()->Unit)=Button(this).apply {
+-        this.text=text; setTextColor(textColor); textSize=13f*textScale; typeface=android.graphics.Typeface.create(cairo,android.graphics.Typeface.BOLD); background=bg(color,10); isAllCaps=false
++        this.text=text; setTextColor(textColor); textSize=13f*textScale; typeface=android.graphics.Typeface.create(cairo,android.graphics.Typeface.BOLD); background=bg(color,10); isAllCaps=false; layoutDirection=View.LAYOUT_DIRECTION_RTL; textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL
+         setPadding(dp(12),0,dp(12),0); minHeight=dp(44); setOnClickListener{onClick()}
+     }
+     private fun edit(hint:String, multi:Boolean=false)=EditText(this).apply {
+         this.hint=hint; textSize=14f*textScale; setTextColor(Color.DKGRAY); setHintTextColor(Color.GRAY); typeface=cairo; background=bg(Color.WHITE,9,line,1)
+-        setPadding(dp(12),dp(9),dp(12),dp(9)); gravity=Gravity.RIGHT or Gravity.TOP; textDirection=View.TEXT_DIRECTION_RTL
++        setPadding(dp(12),dp(9),dp(12),dp(9)); gravity=Gravity.END or Gravity.TOP; layoutDirection=View.LAYOUT_DIRECTION_RTL; textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL
+         if(multi){ minLines=3; maxLines=6 } else setSingleLine(true)
+         setOnFocusChangeListener { v, hasFocus -> if(hasFocus) ensureInputVisible(v) }
+         setOnClickListener { ensureInputVisible(this) }
+@@ -122,7 +123,7 @@
+ 
+         topBar=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(10),dp(8),dp(10),dp(8)); AppearanceSettings.applyHeader(this@MainActivity,this) }
+         val top=topBar
+-        val brandRow=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
++        val brandRow=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL; layoutDirection=View.LAYOUT_DIRECTION_RTL }
+         if(!hasPersistentSidebar) brandRow.addView(btn("☰",inkSoft,Color.WHITE){ showNavigationDialog() },LinearLayout.LayoutParams(dp(52),dp(48)).apply{marginEnd=dp(8)})
+         val headerText=AppearanceSettings.contrastText(AppearanceSettings.headerColor(this))
+         val brand=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; addView(tv("ملف إنجاز المعلم",if(isTablet)20f else 18f,headerText,true)); addView(tv("سجل مهني موثّق بالأدلة والشواهد",if(isTablet)11f else 10.5f,headerText).apply{alpha=0.82f}) }
+@@ -137,7 +138,7 @@
+         }
+         top.addView(brandRow,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT))
+         if(!isTablet){
+-            val actions=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER;setPadding(0,dp(8),0,0)}
++            val actions=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER;layoutDirection=View.LAYOUT_DIRECTION_RTL;setPadding(0,dp(8),0,0)}
+             val backup=btn("نسخ",inkSoft,Color.WHITE){ createBackup() }.apply{setCompoundDrawablesWithIntrinsicBounds(0,0,android.R.drawable.ic_menu_save,0)}
+             val restore=btn("استعادة",inkSoft,Color.WHITE){ restoreBackup() }.apply{setCompoundDrawablesWithIntrinsicBounds(0,0,android.R.drawable.ic_menu_upload,0)}
+             val pdf=btn("PDF",gold,Color.WHITE){ createPdf() }
+@@ -159,18 +160,28 @@
+     private fun refreshSidebar() {
+         val sb=sidebar ?: return; sb.removeAllViews()
+         sb.addView(navItem("الغلاف والبيانات الأساسية", currentSectionId==null){showProfile()})
+-        val scroll=ScrollView(this); val list=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
+-        db.getSections(false).forEachIndexed { idx,s -> list.addView(navItem("${idx+1}. ${s.title}",currentSectionId==s.id){showSection(s.id)}) }
++        val scroll=ScrollView(this).apply{layoutDirection=View.LAYOUT_DIRECTION_RTL}; val list=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;layoutDirection=View.LAYOUT_DIRECTION_RTL}
++        db.getSections(false).forEachIndexed { idx,s -> list.addView(numberedNavItem(idx+1,s.title,currentSectionId==s.id){showSection(s.id)}) }
+         scroll.addView(list); sb.addView(scroll,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,0,1f))
+         sb.addView(btn("＋ إضافة قسم مخصص",inkSoft,Color.rgb(232,217,184)){showSectionDialog(null)},LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(50)).apply{setMargins(dp(8),dp(6),dp(8),dp(4))})
+         sb.addView(navItem("⚙ إعدادات الأقسام",false){showSectionManager()})
+     }
+     private fun navItem(label:String,active:Boolean,onClick:()->Unit)=TextView(this).apply {
+-        text=label;textSize=13f;typeface=android.graphics.Typeface.create(cairo,if(active)android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL);gravity=Gravity.RIGHT or Gravity.CENTER_VERTICAL
++        text=label;textSize=13f;typeface=android.graphics.Typeface.create(cairo,if(active)android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL);gravity=Gravity.END or Gravity.CENTER_VERTICA

@@ -1,0 +1,28 @@
+         setOnClickListener { ensureInputVisible(this) }
+@@ -122,7 +123,7 @@
+ 
+         topBar=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(10),dp(8),dp(10),dp(8)); AppearanceSettings.applyHeader(this@MainActivity,this) }
+         val top=topBar
+-        val brandRow=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL }
++        val brandRow=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL; gravity=Gravity.CENTER_VERTICAL; layoutDirection=View.LAYOUT_DIRECTION_RTL }
+         if(!hasPersistentSidebar) brandRow.addView(btn("☰",inkSoft,Color.WHITE){ showNavigationDialog() },LinearLayout.LayoutParams(dp(52),dp(48)).apply{marginEnd=dp(8)})
+         val headerText=AppearanceSettings.contrastText(AppearanceSettings.headerColor(this))
+         val brand=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; addView(tv("ملف إنجاز المعلم",if(isTablet)20f else 18f,headerText,true)); addView(tv("سجل مهني موثّق بالأدلة والشواهد",if(isTablet)11f else 10.5f,headerText).apply{alpha=0.82f}) }
+@@ -137,7 +138,7 @@
+         }
+         top.addView(brandRow,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT))
+         if(!isTablet){
+-            val actions=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER;setPadding(0,dp(8),0,0)}
++            val actions=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER;layoutDirection=View.LAYOUT_DIRECTION_RTL;setPadding(0,dp(8),0,0)}
+             val backup=btn("نسخ",inkSoft,Color.WHITE){ createBackup() }.apply{setCompoundDrawablesWithIntrinsicBounds(0,0,android.R.drawable.ic_menu_save,0)}
+             val restore=btn("استعادة",inkSoft,Color.WHITE){ restoreBackup() }.apply{setCompoundDrawablesWithIntrinsicBounds(0,0,android.R.drawable.ic_menu_upload,0)}
+             val pdf=btn("PDF",gold,Color.WHITE){ createPdf() }
+@@ -159,18 +160,28 @@
+     private fun refreshSidebar() {
+         val sb=sidebar ?: return; sb.removeAllViews()
+         sb.addView(navItem("الغلاف والبيانات الأساسية", currentSectionId==null){showProfile()})
+-        val scroll=ScrollView(this); val list=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
+-        db.getSections(false).forEachIndexed { idx,s -> list.addView(navItem("${idx+1}. ${s.title}",currentSectionId==s.id){showSection(s.id)}) }
++        val scroll=ScrollView(this).apply{layoutDirection=View.LAYOUT_DIRECTION_RTL}; val list=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;layoutDirection=View.LAYOUT_DIRECTION_RTL}
++        db.getSections(false).forEachIndexed { idx,s -> list.addView(numberedNavItem(idx+1,s.title,currentSectionId==s.id){showSection(s.id)}) }
+         scroll.addView(list); sb.addView(scroll,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,0,1f))

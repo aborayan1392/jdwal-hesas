@@ -25,11 +25,20 @@ jobs:
           tar -xJf /tmp/TeacherPortfolio-v1.4.0-source.tar.xz -C teacher_portfolio
           sed -i 's/? :/?:/g' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
           sed -i 's/? :/?:/g' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt')
+          s=p.read_text()
+          old='fun completionPercent():Int{ val ss=getSections(false); if(ss.isEmpty())return 0; val pts=ss.sumOf{when(it.status){"مكتمل"->100;"قيد الإنجاز"->50;else->0}}; return pts/ss.size }'
+          new='fun completionPercent():Int{ val ss=getSections(false); if(ss.isEmpty())return 0; val pts=ss.fold(0){acc,sec->acc+when(sec.status){"مكتمل"->100;"قيد الإنجاز"->50;else->0}}; return pts/ss.size }'
+          if old not in s: raise SystemExit('completionPercent pattern not found')
+          p.write_text(s.replace(old,new))
+          PY
           ! grep -R -F -q '? :' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio
           grep -q 'versionName = "1.4.0"' teacher_portfolio/app/build.gradle.kts
           grep -q 'CREATE TABLE attachments' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
           grep -q 'PdfRenderer' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          grep -q 'completionPercent' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
+          grep -q 'fold(0)' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
           grep -q 'showEvidenceManageDialog' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
           grep -q 'اختيار الأقسام للتصدير' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
           grep -q 'مصمم الغلاف' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt

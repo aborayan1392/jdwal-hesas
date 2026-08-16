@@ -1,0 +1,56 @@
+-            drawText(c, title, titleLeft, 22f, W - M - titleLeft, 24f, headerTextColor, true, 2)
++            val titleRightReserve = if (numberLabel.isNotBlank()) 56f else 0f
++            drawText(c, title, M, 22f, W - 2 * M - titleRightReserve, 24f, headerTextColor, true, 2)
+             if (subtitle.isNotBlank()) {
+-                drawText(c, subtitle, M, 59f, W - 2 * M, 10.5f, headerSecondaryColor, false, 1)
++                drawText(c, subtitle, M, 59f, W - 2 * M - titleRightReserve, 10.5f, headerSecondaryColor, false, 1)
+             }
+             if (numberLabel.isNotBlank()) {
+-                val r = RectF(M, 19f, M + 44f, 63f)
++                val r = RectF(W - M - 44f, 19f, W - M, 63f)
+                 c.drawRoundRect(r, 12f, 12f, paint(GOLD))
+                 drawCenteredNumber(c, numberLabel, r, 17f, Color.WHITE)
+             }
+@@ -265,7 +265,7 @@
+             pairs.forEachIndexed { idx, (label, value) ->
+                 val col = idx % 2
+                 if (idx > 0 && col == 0) y += 48f
+-                val left = if (col == 0) info.left + 16 else info.left + info.width() / 2 + 8
++                val left = if (col == 0) info.left + info.width() / 2 + 8 else info.left + 16
+                 val width = info.width() / 2 - 30
+                 drawText(c, label, left, y, width, 9.5f, MUTED, true, 1)
+                 drawText(c, value, left, y + 16, width, 12f, INK, true, 2)
+@@ -281,9 +281,9 @@
+                 drawText(c, n.toString(), x + 10, statsY + 18, statW - 20, 25f, GOLD, true, 1, Layout.Alignment.ALIGN_CENTER)
+                 drawText(c, label, x + 10, statsY + 58, statW - 20, 10f, MUTED, true, 1, Layout.Alignment.ALIGN_CENTER)
+             }
+-            stat(M, sections.size, "إجمالي الأقسام")
++            stat(M + 2 * (statW + gap), sections.size, "إجمالي الأقسام")
+             stat(M + statW + gap, filledCount, "أقسام مكتملة")
+-            stat(M + 2 * (statW + gap), evidenceCount, "إجمالي الشواهد")
++            stat(M, evidenceCount, "إجمالي الشواهد")
+ 
+             if (p.bio.isNotBlank()) {
+                 val bio = RectF(M, 650f, W - M, H - 66f)
+@@ -305,7 +305,7 @@
+             sections.forEachIndexed { idx, s ->
+                 val col = idx % 2
+                 val row = idx / 2
+-                val x = M + col * (colW + gap)
++                val x = if (col == 0) W - M - colW else M
+                 val y = top + row * (rowH + 8f)
+                 val r = RectF(x, y, x + colW, y + rowH)
+                 c.drawRoundRect(r, 11f, 11f, paint(Color.rgb(249, 247, 242)))
+@@ -350,7 +350,7 @@
+ 
+             items.forEachIndexed { idx, e ->
+                 if (col == 0 && rowTop + cardH > bottomLimit) nextPage()
+-                val left = M + col * (cardW + gapX)
++                val left = if (col == 0) W - M - cardW else M
+                 val rect = RectF(left, rowTop, left + cardW, rowTop + cardH)
+                 drawEvidenceGridCard(canvas, rect, idx + 1, e)
+                 if (col == 1) {
+@@ -372,13 +372,13 @@
+             val pad = 11f
+             val innerW = rect.width() - pad * 2
+             val badgeW = 26f

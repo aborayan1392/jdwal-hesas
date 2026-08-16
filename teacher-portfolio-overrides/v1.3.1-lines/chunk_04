@@ -1,0 +1,27 @@
+-        card.addView(tv(number.toString(),11f,if(active)ink else Color.rgb(205,214,230)),LinearLayout.LayoutParams(dp(24),LinearLayout.LayoutParams.MATCH_PARENT))
++        card.addView(tv(number.toString(),11.5f,if(active)ink else Color.rgb(225,232,244),true).apply{gravity=Gravity.CENTER;textAlignment=View.TEXT_ALIGNMENT_CENTER},LinearLayout.LayoutParams(dp(28),LinearLayout.LayoutParams.MATCH_PARENT).apply{marginEnd=dp(4)})
+         card.addView(tv(title,12f,if(active)ink else Color.rgb(238,241,247),active).apply{maxLines=2;ellipsize=TextUtils.TruncateAt.END},LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.MATCH_PARENT,1f))
+         val badge=tv(count.toString(),11f,Color.WHITE).apply{gravity=Gravity.CENTER;background=bg(Color.rgb(91,113,153),30);setPadding(0,0,0,0)}
+         card.addView(badge,LinearLayout.LayoutParams(dp(34),dp(28)))
+@@ -300,7 +307,7 @@
+         AppFonts.choices.forEach { choice ->
+             val rb=RadioButton(this).apply{
+                 text=choice.label;textSize=14f*uiScale;typeface=AppFonts.typeface(this@MainActivity,choice.key)
+-                setTextColor(ink);gravity=Gravity.RIGHT or Gravity.CENTER_VERTICAL;textDirection=View.TEXT_DIRECTION_RTL
++                setTextColor(ink);gravity=Gravity.END or Gravity.CENTER_VERTICAL;textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL
+                 setPadding(dp(6),dp(3),dp(6),dp(3));isChecked=choice.key==selectedFont
+             }
+             fontButtons[choice.key]=rb;fontGroup.addView(rb,RadioGroup.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(42)))
+@@ -315,7 +322,7 @@
+             val latest=AppearanceSettings.read(this)
+             val p=panel(title)
+             p.addView(tv("لون الخلفية",11.5f,inkSoft,true))
+-            val color=edit("#RRGGBB").apply{setText(AppearanceSettings.colorHex(if(header) latest.headerColor else latest.pageColor));textDirection=View.TEXT_DIRECTION_LTR;gravity=Gravity.CENTER_VERTICAL or Gravity.LEFT}
++            val color=edit("#RRGGBB").apply{setText(AppearanceSettings.colorHex(if(header) latest.headerColor else latest.pageColor));textDirection=View.TEXT_DIRECTION_LTR;gravity=Gravity.CENTER_VERTICAL or Gravity.START}
+             p.addView(color,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(46)).apply{bottomMargin=dp(6)})
+ 
+             val presets=if(header) listOf(
+@@ -420,22 +427,22 @@
+         val pf=if(p.photoPath.isNotBlank()) File(filesDir,p.photoPath) else null; if(pf?.exists()==true) try{photo.setImageBitmap(BitmapFactory.decodeFile(pf.path))}catch(_:Exception){}
+         cover.addView(photo,LinearLayout.LayoutParams(dp(110),dp(110)).apply{setMargins(dp(12),dp(4),dp(12),dp(8))})
+         val coverText=AppearanceSettings.contrastText(AppearanceSettings.headerColor(this))

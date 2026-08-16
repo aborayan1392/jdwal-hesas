@@ -1,0 +1,41 @@
+--- a/app/build.gradle.kts	2026-08-16 20:25:54.000000000 +0000
++++ b/app/build.gradle.kts	2026-08-16 20:43:09.563646856 +0000
+@@ -11,8 +11,8 @@
+         applicationId = "com.aborayan.teacherportfolio"
+         minSdk = 26
+         targetSdk = 35
+-        versionCode = 8
+-        versionName = "1.3.0"
++        versionCode = 9
++        versionName = "1.3.1"
+     }
+ 
+     signingConfigs {
+--- a/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt	2026-08-16 20:25:54.000000000 +0000
++++ b/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt	2026-08-16 20:44:03.175031410 +0000
+@@ -59,6 +59,7 @@
+         super.onCreate(savedInstanceState)
+         cairo=AppFonts.typeface(this)
+         db=PortfolioDb(this)
++        window.decorView.layoutDirection=View.LAYOUT_DIRECTION_RTL
+         window.statusBarColor=AppearanceSettings.headerColor(this); window.navigationBarColor=AppearanceSettings.headerColor(this)
+         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+         buildShell(); showProfile()
+@@ -73,15 +74,15 @@
+     }
+     private fun tv(text:String,size:Float=14f,color:Int=Color.DKGRAY,bold:Boolean=false)=TextView(this).apply {
+         this.text=text; textSize=size*textScale; setTextColor(color); typeface=android.graphics.Typeface.create(cairo,if(bold)android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+-        gravity=Gravity.RIGHT or Gravity.CENTER_VERTICAL; setPadding(dp(4),dp(4),dp(4),dp(4)); textDirection=View.TEXT_DIRECTION_RTL
++        gravity=Gravity.END or Gravity.CENTER_VERTICAL; setPadding(dp(4),dp(4),dp(4),dp(4)); layoutDirection=View.LAYOUT_DIRECTION_RTL; textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL
+     }
+     private fun btn(text:String,color:Int=gold,textColor:Int=Color.WHITE,onClick:()->Unit)=Button(this).apply {
+-        this.text=text; setTextColor(textColor); textSize=13f*textScale; typeface=android.graphics.Typeface.create(cairo,android.graphics.Typeface.BOLD); background=bg(color,10); isAllCaps=false
++        this.text=text; setTextColor(textColor); textSize=13f*textScale; typeface=android.graphics.Typeface.create(cairo,android.graphics.Typeface.BOLD); background=bg(color,10); isAllCaps=false; layoutDirection=View.LAYOUT_DIRECTION_RTL; textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL
+         setPadding(dp(12),0,dp(12),0); minHeight=dp(44); setOnClickListener{onClick()}
+     }
+     private fun edit(hint:String, multi:Boolean=false)=EditText(this).apply {
+         this.hint=hint; textSize=14f*textScale; setTextColor(Color.DKGRAY); setHintTextColor(Color.GRAY); typeface=cairo; background=bg(Color.WHITE,9,line,1)
+-        setPadding(dp(12),dp(9),dp(12),dp(9)); gravity=Gravity.RIGHT or Gravity.TOP; textDirection=View.TEXT_DIRECTION_RTL
++        setPadding(dp(12),dp(9),dp(12),dp(9)); gravity=Gravity.END or Gravity.TOP; layoutDirection=View.LAYOUT_DIRECTION_RTL; textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL
+         if(multi){ minLines=3; maxLines=6 } else setSingleLine(true)
+         setOnFocusChangeListener { v, hasFocus -> if(hasFocus) ensureInputVisible(v) }

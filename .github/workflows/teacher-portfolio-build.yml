@@ -18,8 +18,17 @@ jobs:
           echo '5c3382ca90c2c222f4b1fe646df8c2e04355ae84e95d321410f4b95eb3f55071  teacher-portfolio-source.tar.xz' | sha256sum -c -
           mkdir teacher_portfolio
           tar -xJf teacher-portfolio-source.tar.xz -C teacher_portfolio
+          cat teacher-portfolio-overrides/prepatch/chunk_00 \
+              teacher-portfolio-overrides/prepatch/chunk_01 \
+              teacher-portfolio-overrides/prepatch/chunk_02 \
+              teacher-portfolio-overrides/prepatch/chunk_03 \
+              teacher-portfolio-overrides/prepatch/chunk_04 > /tmp/responsive-pre.patch
           cd teacher_portfolio
+          patch -p1 < /tmp/responsive-pre.patch
           patch -p1 < ../teacher-portfolio-overrides/v1.1.0.patch
+          grep -q 'versionName = "1.1.0"' app/build.gradle.kts
+          grep -q 'menuSectionCard' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q 'إغلاق القسم' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
       - name: Install Cairo font
         shell: bash
         run: |

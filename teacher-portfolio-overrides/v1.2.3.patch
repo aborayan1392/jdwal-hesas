@@ -1,0 +1,107 @@
+diff -ruN TeacherPortfolioKotlin_before_v1.2.3/app/build.gradle.kts TeacherPortfolioKotlin/app/build.gradle.kts
+--- TeacherPortfolioKotlin_before_v1.2.3/app/build.gradle.kts	2026-08-16 19:11:07.285627666 +0000
++++ TeacherPortfolioKotlin/app/build.gradle.kts	2026-08-16 19:20:04.969542099 +0000
+@@ -11,8 +11,8 @@
+         applicationId = "com.aborayan.teacherportfolio"
+         minSdk = 26
+         targetSdk = 35
+-        versionCode = 5
+-        versionName = "1.2.2"
++        versionCode = 6
++        versionName = "1.2.3"
+     }
+ 
+     signingConfigs {
+diff -ruN TeacherPortfolioKotlin_before_v1.2.3/app/src/main/AndroidManifest.xml TeacherPortfolioKotlin/app/src/main/AndroidManifest.xml
+--- TeacherPortfolioKotlin_before_v1.2.3/app/src/main/AndroidManifest.xml	2026-08-16 17:13:25.433622101 +0000
++++ TeacherPortfolioKotlin/app/src/main/AndroidManifest.xml	2026-08-16 19:20:04.969496040 +0000
+@@ -10,7 +10,7 @@
+             android:authorities="${applicationId}.files"
+             android:exported="false"
+             android:grantUriPermissions="true" />
+-        <activity android:name=".MainActivity" android:screenOrientation="unspecified" android:exported="true">
++        <activity android:name=".MainActivity" android:screenOrientation="unspecified" android:exported="true" android:windowSoftInputMode="adjustResize|stateAlwaysHidden">
+             <intent-filter>
+                 <action android:name="android.intent.action.MAIN" />
+                 <category android:name="android.intent.category.LAUNCHER" />
+diff -ruN TeacherPortfolioKotlin_before_v1.2.3/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt TeacherPortfolioKotlin/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+--- TeacherPortfolioKotlin_before_v1.2.3/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt	2026-08-16 18:16:27.855676859 +0000
++++ TeacherPortfolioKotlin/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt	2026-08-16 19:20:04.969357875 +0000
+@@ -53,6 +53,7 @@
+         cairo=AppFonts.typeface(this)
+         db=PortfolioDb(this)
+         window.statusBarColor=ink; window.navigationBarColor=ink
++        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+         buildShell(); showProfile()
+     }
+ 
+@@ -75,6 +76,24 @@
+         this.hint=hint; textSize=14f*textScale; setTextColor(Color.DKGRAY); setHintTextColor(Color.GRAY); typeface=cairo; background=bg(Color.WHITE,9,line,1)
+         setPadding(dp(12),dp(9),dp(12),dp(9)); gravity=Gravity.RIGHT or Gravity.TOP; textDirection=View.TEXT_DIRECTION_RTL
+         if(multi){ minLines=3; maxLines=6 } else setSingleLine(true)
++        setOnFocusChangeListener { v, hasFocus -> if(hasFocus) ensureInputVisible(v) }
++        setOnClickListener { ensureInputVisible(this) }
++    }
++
++    private fun ensureInputVisible(view:View) {
++        // ننتظر لحظة حتى تظهر لوحة المفاتيح ويتغير حجم النافذة، ثم نطلب من
++        // ScrollView الأب إظهار الحقل مع مساحة مريحة فوق لوحة المفاتيح.
++        view.postDelayed({
++            if(!view.isShown || !view.hasFocus()) return@postDelayed
++            val extra=dp(if(view is EditText && view.minLines>1) 150 else 110)
++            val rect=Rect(0,-dp(18),view.width.coerceAtLeast(1),view.height+extra)
++            view.requestRectangleOnScreen(rect,false)
++        },220)
++        view.postDelayed({
++            if(!view.isShown || !view.hasFocus()) return@postDelayed
++            val rect=Rect(0,-dp(18),view.width.coerceAtLeast(1),view.height+dp(120))
++            view.requestRectangleOnScreen(rect,false)
++        },420)
+     }
+     private fun sectionTitle(title:String,sub:String="")=LinearLayout(this).apply {
+         orientation=LinearLayout.VERTICAL; setPadding(0,0,0,dp(12)); addView(tv(title,if(isTablet)26f else 22f,ink,true)); if(sub.isNotBlank()) addView(tv(sub,if(isTablet)13f else 12f,muted,false))
+@@ -86,7 +105,12 @@
+ 
+     private fun buildShell() {
+         root=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setBackgroundColor(paper); layoutDirection=View.LAYOUT_DIRECTION_RTL }
+-        if(Build.VERSION.SDK_INT>=30) root.setOnApplyWindowInsetsListener { v,i -> val s=i.getInsets(WindowInsets.Type.systemBars());v.setPadding(s.left,s.top,s.right,s.bottom);i }
++        if(Build.VERSION.SDK_INT>=30) root.setOnApplyWindowInsetsListener { v,i ->
++            val sys=i.getInsets(WindowInsets.Type.systemBars())
++            val ime=i.getInsets(WindowInsets.Type.ime())
++            v.setPadding(sys.left,sys.top,sys.right,maxOf(sys.bottom,ime.bottom))
++            i
++        }
+         else root.setOnApplyWindowInsetsListener { v,i -> v.setPadding(i.systemWindowInsetLeft,i.systemWindowInsetTop,i.systemWindowInsetRight,i.systemWindowInsetBottom);i }
+ 
+         topBar=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(10),dp(8),dp(10),dp(8)); setBackgroundColor(ink) }
+@@ -493,8 +517,13 @@
+     }
+ 
+     private fun showSectionDialog(existing:Section?) {
+-        val title=edit("عنوان القسم").apply{setText(existing?.title?:"")};val desc=edit("وصف القسم",true).apply{setText(existing?.description?:"")};val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(12),0,dp(12),0);addView(tv("عنوان القسم",12f,inkSoft,true));addView(title,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(50)));addView(tv("وصف القسم",12f,inkSoft,true));addView(desc,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(95)))}
+-        val d=AlertDialog.Builder(this).setTitle(if(existing==null)"إضافة قسم مخصص" else "تعديل القسم").setView(box).setNegativeButton("✕ إغلاق",null).setPositiveButton("حفظ",null).create();d.setOnShowListener{styleDialog(d);d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{val t=title.text.toString().trim();if(t.isBlank()){title.error="اكتب عنوان القسم";return@setOnClickListener};val s=existing?.copy(title=t,description=desc.text.toString().trim())?:Section("custom_${UUID.randomUUID()}",t,desc.text.toString().trim(),false,false,db.nextSectionOrder());db.upsertSection(s);d.dismiss();toast("تم حفظ القسم ✓");showSectionManager()}};d.show()
++        val title=edit("عنوان القسم").apply{setText(existing?.title?:"")}
++        val desc=edit("وصف القسم",true).apply{setText(existing?.description?:"")}
++        val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(12),0,dp(12),dp(12));addView(tv("عنوان القسم",12f,inkSoft,true));addView(title,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(50)));addView(tv("وصف القسم",12f,inkSoft,true));addView(desc,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(95)))}
++        val dialogScroll=ScrollView(this).apply{isFillViewport=true;addView(box)}
++        val d=AlertDialog.Builder(this).setTitle(if(existing==null)"إضافة قسم مخصص" else "تعديل القسم").setView(dialogScroll).setNegativeButton("✕ إغلاق",null).setPositiveButton("حفظ",null).create()
++        d.setOnShowListener{styleDialog(d);d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{val t=title.text.toString().trim();if(t.isBlank()){title.error="اكتب عنوان القسم";title.requestFocus();ensureInputVisible(title);return@setOnClickListener};val s=existing?.copy(title=t,description=desc.text.toString().trim())?:Section("custom_${UUID.randomUUID()}",t,desc.text.toString().trim(),false,false,db.nextSectionOrder());db.upsertSection(s);d.dismiss();toast("تم حفظ القسم ✓");showSectionManager()}}
++        d.show()
+     }
+ 
+     private fun pickProfilePhoto(){ startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{addCategory(Intent.CATEGORY_OPENABLE);type="image/*"},PICK_PROFILE) }
+@@ -626,6 +655,13 @@
+     private fun deleteEvidence(e:Evidence){deleteEvidenceFile(e);db.deleteEvidence(e.id)}
+ 
+     private fun confirm(title:String,msg:String,action:()->Unit){AlertDialog.Builder(this).setTitle(title).setMessage(msg).setNegativeButton("إلغاء",null).setPositiveButton("متابعة"){_,_->action()}.show().also{styleDialog(it)}}
+-    private fun styleDialog(d:AlertDialog){d.window?.decorView?.layoutDirection=View.LAYOUT_DIRECTION_RTL;d.getButton(AlertDialog.BUTTON_POSITIVE)?.apply{setTextColor(goldDeep);typeface=cairo};d.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply{setTextColor(inkSoft);typeface=cairo}}
++    private fun styleDialog(d:AlertDialog){
++        d.window?.apply{
++            decorView.layoutDirection=View.LAYOUT_DIRECTION_RTL
++            setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
++        }
++        d.getButton(AlertDialog.BUTTON_POSITIVE)?.apply{setTextColor(goldDeep);typeface=cairo}
++        d.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply{setTextColor(inkSoft);typeface=cairo}
++    }
+     private fun toast(msg:String,error:Boolean=false){Toast.makeText(this,msg,if(error)Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()}
+ }

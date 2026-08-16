@@ -1,0 +1,34 @@
+         val top=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(12),dp(12),dp(12),dp(12));setBackgroundColor(Color.argb(180,15,20,30));layoutDirection=View.LAYOUT_DIRECTION_RTL}
+         top.addView(btn("✕ إغلاق",Color.argb(170,55,65,80),Color.WHITE){dialog.dismiss()},LinearLayout.LayoutParams(dp(105),dp(44)).apply{marginEnd=dp(8)})
+-        top.addView(tv(e.title,14f,Color.WHITE,true).apply{gravity=Gravity.RIGHT or Gravity.CENTER_VERTICAL;maxLines=1;ellipsize=TextUtils.TruncateAt.END},LinearLayout.LayoutParams(0,dp(44),1f))
++        top.addView(tv(e.title,14f,Color.WHITE,true).apply{gravity=Gravity.END or Gravity.CENTER_VERTICAL;maxLines=1;ellipsize=TextUtils.TruncateAt.END},LinearLayout.LayoutParams(0,dp(44),1f))
+         top.addView(btn("فتح خارجي",Color.argb(170,55,65,80),Color.WHITE){openFileExternal(e)},LinearLayout.LayoutParams(dp(118),dp(44)).apply{marginStart=dp(8)})
+         frame.addView(top,FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,dp(68),Gravity.TOP))
+         val caption=tv("الصورة معروضة بنسبة أبعادها الأصلية دون قص",10.5f,Color.LTGRAY).apply{gravity=Gravity.CENTER;setBackgroundColor(Color.argb(150,0,0,0))}
+@@ -778,8 +785,8 @@
+             decorView.layoutDirection=View.LAYOUT_DIRECTION_RTL
+             setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+         }
+-        d.getButton(AlertDialog.BUTTON_POSITIVE)?.apply{setTextColor(goldDeep);typeface=cairo}
+-        d.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply{setTextColor(inkSoft);typeface=cairo}
++        d.getButton(AlertDialog.BUTTON_POSITIVE)?.apply{setTextColor(goldDeep);typeface=cairo;layoutDirection=View.LAYOUT_DIRECTION_RTL;textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL}
++        d.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply{setTextColor(inkSoft);typeface=cairo;layoutDirection=View.LAYOUT_DIRECTION_RTL;textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL}
+     }
+     private fun toast(msg:String,error:Boolean=false){Toast.makeText(this,msg,if(error)Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()}
+ }
+--- a/app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt	2026-08-16 20:25:54.000000000 +0000
++++ b/app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt	2026-08-16 20:44:03.175216866 +0000
+@@ -89,7 +89,7 @@
+             }
+             return StaticLayout.Builder.obtain(text, 0, text.length, tp, width)
+                 .setAlignment(alignment)
+-                .setTextDirection(TextDirectionHeuristics.RTL)
++                .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_RTL)
+                 .setIncludePad(false)
+                 .setLineSpacing(1.5f, 1.03f)
+                 .setMaxLines(maxLines)
+@@ -184,13 +184,13 @@
+             drawPageBackground(c)
+             drawHeaderBackground(c,RectF(0f,0f,W.toFloat(),92f))
+             c.drawRect(0f, 90f, W.toFloat(), 94f, paint(GOLD))
+-            val titleLeft = M + if (numberLabel.isNotBlank()) 56f else 0f

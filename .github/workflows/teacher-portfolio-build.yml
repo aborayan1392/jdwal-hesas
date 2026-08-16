@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: Restore v1.3.1 source
+      - name: Restore v1.3.2 source
         shell: bash
         run: |
           set -euo pipefail
@@ -51,14 +51,39 @@ jobs:
               ../teacher-portfolio-overrides/v1.3.1-lines/chunk_09 > /tmp/v1.3.1.patch
           echo '082fd04c6ee56d34177571ead4eeebc54473cb6354e0b6394da9190c13ed7265  /tmp/v1.3.1.patch' | sha256sum -c -
           patch -p1 < /tmp/v1.3.1.patch
-          grep -q 'versionName = "1.3.1"' app/build.gradle.kts
-          grep -q 'window.decorView.layoutDirection=View.LAYOUT_DIRECTION_RTL' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          grep -q 'numberedNavItem' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          grep -q 'val x = if (col == 0) W - M - colW else M' app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
-          grep -q 'val left = if (col == 0) W - M - cardW else M' app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
-          grep -q 'TextDirectionHeuristics.FIRSTSTRONG_RTL' app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
-          ! grep -q 'Gravity.RIGHT' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          ! grep -q 'Gravity.LEFT' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt')
+          s=p.read_text()
+          s=s.replace('gravity=Gravity.END or Gravity.CENTER_VERTICAL; setPadding', 'gravity=Gravity.START or Gravity.CENTER_VERTICAL; textAlignment=View.TEXT_ALIGNMENT_VIEW_START; setPadding')
+          s=s.replace('gravity=Gravity.END or Gravity.TOP; layoutDirection', 'gravity=Gravity.START or Gravity.TOP; textAlignment=View.TEXT_ALIGNMENT_VIEW_START; layoutDirection')
+          s=s.replace('gravity=Gravity.END or Gravity.CENTER_VERTICAL\n        layoutDirection', 'gravity=Gravity.START or Gravity.CENTER_VERTICAL; textAlignment=View.TEXT_ALIGNMENT_VIEW_START\n        layoutDirection')
+          s=s.replace('gravity=Gravity.END or Gravity.CENTER_VERTICAL;maxLines=2', 'gravity=Gravity.START or Gravity.CENTER_VERTICAL;textAlignment=View.TEXT_ALIGNMENT_VIEW_START;maxLines=2')
+          s=s.replace('setTextColor(ink);gravity=Gravity.END or Gravity.CENTER_VERTICAL;textDirection', 'setTextColor(ink);gravity=Gravity.START or Gravity.CENTER_VERTICAL;textAlignment=View.TEXT_ALIGNMENT_VIEW_START;textDirection')
+          s=s.replace('orientation=LinearLayout.VERTICAL;gravity=Gravity.END;addView', 'orientation=LinearLayout.VERTICAL;gravity=Gravity.START;layoutDirection=View.LAYOUT_DIRECTION_RTL;addView')
+          s=s.replace('orientation=LinearLayout.VERTICAL;gravity=Gravity.END;layoutDirection', 'orientation=LinearLayout.VERTICAL;gravity=Gravity.START;layoutDirection')
+          s=s.replace('gravity=Gravity.CENTER_VERTICAL or Gravity.END;background', 'gravity=Gravity.CENTER_VERTICAL or Gravity.START;textAlignment=View.TEXT_ALIGNMENT_VIEW_START;background')
+          s=s.replace('gravity=Gravity.END or Gravity.CENTER_VERTICAL;textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL', 'gravity=Gravity.START or Gravity.CENTER_VERTICAL;textAlignment=View.TEXT_ALIGNMENT_VIEW_START;textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL')
+          s=s.replace('gravity=Gravity.END or Gravity.CENTER_VERTICAL;maxLines=1', 'gravity=Gravity.START or Gravity.CENTER_VERTICAL;textAlignment=View.TEXT_ALIGNMENT_VIEW_START;maxLines=1')
+          s=s.replace('this.text=text; textSize=size*textScale;', 'this.text=text; textSize=size*textScale; textAlignment=View.TEXT_ALIGNMENT_VIEW_START;')
+          s=s.replace('val brand=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL;', 'val brand=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; gravity=Gravity.START; layoutDirection=View.LAYOUT_DIRECTION_RTL;')
+          s=s.replace('val p=db.getProfile(); val scroll=ScrollView(this); val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding', 'val p=db.getProfile(); val scroll=ScrollView(this).apply{layoutDirection=View.LAYOUT_DIRECTION_RTL}; val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;layoutDirection=View.LAYOUT_DIRECTION_RTL;setPadding')
+          s=s.replace('val cover=LinearLayout(this).apply{orientation=if(isTablet)LinearLayout.HORIZONTAL else LinearLayout.VERTICAL;gravity=Gravity.CENTER;', 'val cover=LinearLayout(this).apply{orientation=if(isTablet)LinearLayout.HORIZONTAL else LinearLayout.VERTICAL;gravity=Gravity.CENTER;layoutDirection=View.LAYOUT_DIRECTION_RTL;')
+          old='fun statCard(label:String,n:Int)=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;background=bg(Color.WHITE,12,line);setPadding(dp(8),dp(12),dp(8),dp(12));addView(tv(n.toString(),26f,goldDeep,true).apply{gravity=Gravity.CENTER});addView(tv(label,11f,muted).apply{gravity=Gravity.CENTER})}'
+          new='''fun statCard(label:String,n:Int)=LinearLayout(this).apply{\n            orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;background=bg(Color.WHITE,12,line);setPadding(dp(7),dp(7),dp(7),dp(7));layoutDirection=View.LAYOUT_DIRECTION_RTL\n            val number=tv(n.toString(),23f,goldDeep,true).apply{gravity=Gravity.CENTER;textAlignment=View.TEXT_ALIGNMENT_CENTER;includeFontPadding=false;maxLines=1}\n            val caption=tv(label,10.5f,muted,true).apply{gravity=Gravity.CENTER;textAlignment=View.TEXT_ALIGNMENT_CENTER;includeFontPadding=false;maxLines=2}\n            addView(number,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,0,0.56f))\n            addView(caption,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,0,0.44f))\n        }'''
+          if old not in s: raise SystemExit('statCard pattern not found')
+          s=s.replace(old,new)
+          s=s.replace('fun addField(label:String,key:String,value:String,multi:Boolean=false){ val wrap=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;addView', 'fun addField(label:String,key:String,value:String,multi:Boolean=false){ val wrap=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;layoutDirection=View.LAYOUT_DIRECTION_RTL;addView')
+          s=s.replace('textDirection=View.TEXT_DIRECTION_LTR;gravity=Gravity.CENTER_VERTICAL or Gravity.START}', 'layoutDirection=View.LAYOUT_DIRECTION_LTR;textDirection=View.TEXT_DIRECTION_LTR;gravity=Gravity.CENTER_VERTICAL or Gravity.START;textAlignment=View.TEXT_ALIGNMENT_VIEW_START}')
+          p.write_text(s)
+          bp=Path('app/build.gradle.kts')
+          b=bp.read_text().replace('versionCode = 9','versionCode = 10').replace('versionName = "1.3.1"','versionName = "1.3.2"')
+          bp.write_text(b)
+          PY
+          grep -q 'versionName = "1.3.2"' app/build.gradle.kts
+          grep -q 'gravity=Gravity.START or Gravity.CENTER_VERTICAL' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q 'val caption=tv(label,10.5f' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          ! grep -q 'gravity=Gravity.END or Gravity.CENTER_VERTICAL' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
       - name: Install Arabic fonts
         shell: bash
         run: |
@@ -91,12 +116,12 @@ jobs:
           unzip -tq "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
           mkdir -p dist
-          cp "$APK" dist/TeacherPortfolio-v1.3.1.apk
-          sha256sum dist/TeacherPortfolio-v1.3.1.apk > dist/TeacherPortfolio-v1.3.1.apk.sha256
-          tar --exclude='./app/src/main/res/font/*' -cJf dist/TeacherPortfolio-v1.3.1-source.tar.xz -C teacher_portfolio .
+          cp "$APK" dist/TeacherPortfolio-v1.3.2.apk
+          sha256sum dist/TeacherPortfolio-v1.3.2.apk > dist/TeacherPortfolio-v1.3.2.apk.sha256
+          tar --exclude='./app/src/main/res/font/*' -cJf dist/TeacherPortfolio-v1.3.2-source.tar.xz -C teacher_portfolio .
       - uses: actions/upload-artifact@v4
         with:
-          name: teacher-portfolio-v1.3.1
+          name: teacher-portfolio-v1.3.2
           path: dist/*
           if-no-files-found: error
           retention-days: 7

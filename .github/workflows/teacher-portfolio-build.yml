@@ -15,7 +15,7 @@ jobs:
         run: |
           set -euo pipefail
           base64 -d teacher-portfolio-payload/source.b64 > teacher-portfolio-source.tar.xz
-          echo '65e4e98f5e61ed181c5c4f1dd9f28a0ec9393a70312860f5da34bbfe849d3f86  teacher-portfolio-source.tar.xz' | sha256sum -c -
+          echo '5c3382ca90c2c222f4b1fe646df8c2e04355ae84e95d321410f4b95eb3f55071  teacher-portfolio-source.tar.xz' | sha256sum -c -
           mkdir teacher_portfolio
           tar -xJf teacher-portfolio-source.tar.xz -C teacher_portfolio
       - name: Install Cairo font

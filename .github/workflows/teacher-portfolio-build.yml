@@ -10,32 +10,35 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: Restore source
+      - name: Restore v1.2 source
         shell: bash
         run: |
           set -euo pipefail
-          base64 -d teacher-portfolio-payload/source.b64 > teacher-portfolio-source.tar.xz
-          echo '5c3382ca90c2c222f4b1fe646df8c2e04355ae84e95d321410f4b95eb3f55071  teacher-portfolio-source.tar.xz' | sha256sum -c -
+          cat teacher-portfolio-v1.2-chunks/chunk_00 \
+              teacher-portfolio-v1.2-chunks/chunk_01 \
+              teacher-portfolio-v1.2-chunks/chunk_02 \
+              teacher-portfolio-v1.2-chunks/chunk_03 \
+              teacher-portfolio-v1.2-chunks/chunk_04 \
+              teacher-portfolio-v1.2-chunks/chunk_05 > /tmp/source.b64
+          base64 -d /tmp/source.b64 > teacher-portfolio-source.tar.xz
+          echo '2e750091d7535038bb09c324b0b570da127fbcade76c5098fe563256ca519dc4  teacher-portfolio-source.tar.xz' | sha256sum -c -
           mkdir teacher_portfolio
           tar -xJf teacher-portfolio-source.tar.xz -C teacher_portfolio
-          cat teacher-portfolio-overrides/prepatch/chunk_00 \
-              teacher-portfolio-overrides/prepatch/chunk_01 \
-              teacher-portfolio-overrides/prepatch/chunk_02 \
-              teacher-portfolio-overrides/prepatch/chunk_03 \
-              teacher-portfolio-overrides/prepatch/chunk_04 > /tmp/responsive-pre.patch
-          cd teacher_portfolio
-          patch -p1 < /tmp/responsive-pre.patch
-          patch -p1 < ../teacher-portfolio-overrides/v1.1.0.patch
-          grep -q 'versionName = "1.1.0"' app/build.gradle.kts
-          grep -q 'menuSectionCard' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          grep -q 'إغلاق القسم' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-      - name: Install Cairo font
+          grep -q 'versionName = "1.2.0"' teacher_portfolio/app/build.gradle.kts
+          grep -q 'AppFonts.typeface' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q 'StaticLayout' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
+          grep -q 'معاينة' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+      - name: Install Arabic fonts
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p teacher_portfolio/app/src/main/res/font
-          curl -L --fail --retry 3 'https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/Cairo%5Bslnt,wght%5D.ttf' -o teacher_portfolio/app/src/main/res/font/cairo.ttf
-          test -s teacher_portfolio/app/src/main/res/font/cairo.ttf
+          F=teacher_portfolio/app/src/main/res/font
+          mkdir -p "$F"
+          curl -L --fail --retry 3 'https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/Cairo%5Bslnt,wght%5D.ttf' -o "$F/cairo.ttf"
+          curl -L --fail --retry 3 'https://raw.githubusercontent.com/google/fonts/main/ofl/tajawal/Tajawal-Regular.ttf' -o "$F/tajawal.ttf"
+          curl -L --fail --retry 3 'https://raw.githubusercontent.com/google/fonts/main/ofl/notokufiarabic/NotoKufiArabic%5Bwght%5D.ttf' -o "$F/notokufi.ttf"
+          curl -L --fail --retry 3 'https://raw.githubusercontent.com/google/fonts/main/ofl/amiri/Amiri-Regular.ttf' -o "$F/amiri.ttf"
+          test -s "$F/cairo.ttf" && test -s "$F/tajawal.ttf" && test -s "$F/notokufi.ttf" && test -s "$F/amiri.ttf"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -58,13 +61,13 @@ jobs:
           unzip -tq "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
           mkdir -p dist
-          cp "$APK" dist/TeacherPortfolio-v1.1.0.apk
-          sha256sum dist/TeacherPortfolio-v1.1.0.apk > dist/TeacherPortfolio-v1.1.0.apk.sha256
-          tar -cJf dist/TeacherPortfolio-v1.1.0-source.tar.xz -C teacher_portfolio .
+          cp "$APK" dist/TeacherPortfolio-v1.2.0.apk
+          sha256sum dist/TeacherPortfolio-v1.2.0.apk > dist/TeacherPortfolio-v1.2.0.apk.sha256
+          tar --exclude='./app/src/main/res/font/*' -cJf dist/TeacherPortfolio-v1.2.0-source.tar.xz -C teacher_portfolio .
           ls -lh dist
       - uses: actions/upload-artifact@v4
         with:
-          name: teacher-portfolio-v1.1.0
+          name: teacher-portfolio-v1.2.0
           path: dist/*
           if-no-files-found: error
           retention-days: 7

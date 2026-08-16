@@ -1,0 +1,41 @@
+       actions.addView(pdf,LinearLayout.LayoutParams(0,dp(44),1f).apply{marginEnd=dp(5)})
++            actions.addView(backup,LinearLayout.LayoutParams(0,dp(44),1f).apply{marginEnd=dp(5)})
++            actions.addView(restore,LinearLayout.LayoutParams(0,dp(44),1f))
++            top.addView(actions,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT))
++        }
+         root.addView(top,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT))
+ 
+         val body=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
+@@ -114,7 +131,7 @@
+         val items= mutableListOf("الغلاف والبيانات الأساسية"); val sections=db.getSections(false); items.addAll(sections.map{it.title});items += "إضافة قسم مخصص";items += "إعدادات الأقسام"
+         AlertDialog.Builder(this).setTitle("أقسام ملف الإنجاز").setItems(items.toTypedArray()){d,which -> when {
+             which==0 -> showProfile(); which in 1..sections.size -> showSection(sections[which-1].id); which==sections.size+1 -> showSectionDialog(null); else -> showSectionManager()
+-        };d.dismiss()}.show().also{ styleDialog(it) }
++        };d.dismiss()}.setNegativeButton("✕ إغلاق",null).show().also{ styleDialog(it) }
+     }
+ 
+     private fun setScreen(view:View) { contentHost.removeAllViews();contentHost.addView(view,FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,FrameLayout.LayoutParams.MATCH_PARENT));refreshSidebar() }
+@@ -127,12 +144,25 @@
+         val pf=if(p.photoPath.isNotBlank()) File(filesDir,p.photoPath) else null; if(pf?.exists()==true) try{photo.setImageBitmap(BitmapFactory.decodeFile(pf.path))}catch(_:Exception){}
+         cover.addView(photo,LinearLayout.LayoutParams(dp(110),dp(110)).apply{setMargins(dp(12),dp(4),dp(12),dp(8))})
+         val ct=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.RIGHT;addView(tv("ملف الإنجاز المهني",12f,Color.rgb(232,217,184),true));addView(tv(p.name.ifBlank{"اسم المعلم"},30f,Color.WHITE,true));addView(tv(listOf(p.subject,p.school).filter{it.isNotBlank()}.joinToString(" — ").ifBlank{"التخصص — المدرسة"},14f,Color.LTGRAY))}
+-        cover.addView(ct,LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.WRAP_CONTENT,1f)); box.addView(cover)
++        cover.addView(ct,if(isTablet) LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.WRAP_CONTENT,1f) else LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT).apply{topMargin=dp(12)}); box.addView(cover)
+ 
+-        val stats=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER}
+         val sCount=db.getSections(false).size; val filled=db.countFilledSections(); val eCount=db.countEvidence()
+-        listOf("إجمالي الأقسام" to sCount,"أقسام مكتملة" to filled,"إجمالي الشواهد" to eCount).forEach { (l,n)-> val card=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;background=bg(Color.WHITE,12,line);setPadding(dp(8),dp(12),dp(8),dp(12));addView(tv(n.toString(),26f,goldDeep,true).apply{gravity=Gravity.CENTER});addView(tv(l,11f,muted).apply{gravity=Gravity.CENTER})};stats.addView(card,LinearLayout.LayoutParams(0,dp(86),1f).apply{setMargins(dp(3),dp(12),dp(3),dp(12))}) }
+-        box.addView(stats)
++        fun statCard(label:String,n:Int)=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;background=bg(Color.WHITE,12,line);setPadding(dp(8),dp(12),dp(8),dp(12));addView(tv(n.toString(),26f,goldDeep,true).apply{gravity=Gravity.CENTER});addView(tv(label,11f,muted).apply{gravity=Gravity.CENTER})}
++        if(isTablet){
++            val stats=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER}
++            listOf("إجمالي الأقسام" to sCount,"أقسام مكتملة" to filled,"إجمالي الشواهد" to eCount).forEach { (l,n)-> stats.addView(statCard(l,n),LinearLayout.LayoutParams(0,dp(90),1f).apply{setMargins(dp(4),dp(12),dp(4),dp(12))}) }
++            box.addView(stats)
++        } else {
++            val stats=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
++            val r1=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
++            r1.addView(statCard("إجمالي الأقسام",sCount),LinearLayout.LayoutParams(0,dp(92),1f).apply{setMargins(dp(3),dp(12),dp(3),dp(4))})
++            r1.addView(statCard("أقسام مكتملة",filled),LinearLayout.LayoutParams(0,dp(92),1f).apply{setMargins(dp(3),dp(12),dp(3),dp(4))})
++            stats.addView(r1)
++            val r2=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
++            r2.addView(statCard("إجمالي الشواهد",eCount),LinearLayout.LayoutParams(0,dp(92),1f).apply{setMargins(dp(3),dp(4),dp(3),

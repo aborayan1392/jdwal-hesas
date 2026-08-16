@@ -1,0 +1,10 @@
+name: Teacher Portfolio Runner Test
+on:
+  push:
+    branches: ['agent/teacher-portfolio-build']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo RUNNER_OK && java -version

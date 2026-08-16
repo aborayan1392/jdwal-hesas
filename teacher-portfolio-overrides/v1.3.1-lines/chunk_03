@@ -1,0 +1,46 @@
+             background=bg(Color.TRANSPARENT,11,Color.rgb(116,140,183),1)
+@@ -204,28 +215,24 @@
+         val gridBox=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
+         var i=0
+         while(i<sections.size){
+-            val row=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;layoutDirection=View.LAYOUT_DIRECTION_RTL}
+-            repeat(2){col->
+-                val idx=i+col
+-                if(idx<sections.size){
+-                    val sec=sections[idx]
+-                    val active=currentSectionId==sec.id
+-                    val count=db.getEvidence(sec.id).size
+-                    val card=menuSectionCard(idx+1,sec.title,count,active){ popup.dismiss(); showSection(sec.id) }
+-                    row.addView(card,LinearLayout.LayoutParams(0,dp(if(uiPrefs.getBoolean("compact_menu",false)) 48 else 54),1f).apply{
+-                        if(col==0) marginEnd=dp(3) else marginStart=dp(3)
+-                    })
+-                }else{
+-                    row.addView(Space(this),LinearLayout.LayoutParams(0,dp(54),1f))
+-                }
+-            }
++            // نثبت ترتيب الشبكة عربيًا: العنصر الأول في يمين الصف، والثاني في يساره.
++            val row=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;layoutDirection=View.LAYOUT_DIRECTION_LTR}
++            val h=dp(if(uiPrefs.getBoolean("compact_menu",false)) 48 else 54)
++            fun slot(idx:Int):View {
++                if(idx>=sections.size) return Space(this)
++                val sec=sections[idx];val active=currentSectionId==sec.id;val count=db.getEvidence(sec.id).size
++                return menuSectionCard(idx+1,sec.title,count,active){popup.dismiss();showSection(sec.id)}
++            }
++            // يسار الصف = العنصر الثاني، يمين الصف = العنصر الأول.
++            row.addView(slot(i+1),LinearLayout.LayoutParams(0,h,1f).apply{marginEnd=dp(3)})
++            row.addView(slot(i),LinearLayout.LayoutParams(0,h,1f).apply{marginStart=dp(3)})
+             gridBox.addView(row,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT).apply{bottomMargin=dp(6)})
+             i+=2
+         }
+ 
+         val addCustom=TextView(this).apply{
+             text="⊕  إضافة قسم مخصص"; textSize=14f*textScale; setTextColor(Color.rgb(215,222,237)); typeface=android.graphics.Typeface.create(cairo,android.graphics.Typeface.NORMAL)
+-            gravity=Gravity.CENTER; textDirection=View.TEXT_DIRECTION_RTL
++            gravity=Gravity.CENTER; textDirection=View.TEXT_DIRECTION_FIRST_STRONG_RTL
+             background=GradientDrawable().apply{setColor(Color.TRANSPARENT);cornerRadius=dp(12).toFloat();setStroke(dp(2),Color.rgb(125,145,180),dp(5).toFloat(),dp(4).toFloat())}
+             setOnClickListener{popup.dismiss();showSectionDialog(null)}
+         }
+@@ -261,7 +268,7 @@
+             setPadding(dp(10),0,dp(8),0);setOnClickListener{onClick()}
+             background=if(active) gradientBg(Color.rgb(188,216,255),Color.rgb(87,143,238),11,Color.WHITE,1) else bg(Color.rgb(55,80,123),11)
+         }

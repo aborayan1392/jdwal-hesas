@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: Restore v1.2.1 source
+      - name: Restore v1.2.2 source
         shell: bash
         run: |
           set -euo pipefail
@@ -23,9 +23,12 @@ jobs:
           echo '4bb2c0fb7878917f5f3b2884396be405eff22a8112835a657b907bf05056cbe5  teacher-portfolio-source.tar.xz' | sha256sum -c -
           mkdir teacher_portfolio
           tar -xJf teacher-portfolio-source.tar.xz -C teacher_portfolio
-          grep -q 'versionName = "1.2.1"' teacher_portfolio/app/build.gradle.kts
-          grep -q 'drawEvidenceGridCard' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
-          grep -q 'cardW = (W - 2 \* M - gapX) / 2f' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
+          cd teacher_portfolio
+          patch -p1 < ../teacher-portfolio-overrides/v1.2.2.patch
+          grep -q 'versionName = "1.2.2"' app/build.gradle.kts
+          grep -q 'Layout.Alignment.ALIGN_CENTER' app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
+          grep -q 'pageBadge.centerX' app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
+          grep -q 'if (e.link.isNotBlank())' app/src/main/java/com/aborayan/teacherportfolio/PdfExporter.kt
       - name: Install Arabic fonts
         shell: bash
         run: |
@@ -58,12 +61,12 @@ jobs:
           unzip -tq "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
           mkdir -p dist
-          cp "$APK" dist/TeacherPortfolio-v1.2.1.apk
-          sha256sum dist/TeacherPortfolio-v1.2.1.apk > dist/TeacherPortfolio-v1.2.1.apk.sha256
-          tar --exclude='./app/src/main/res/font/*' -cJf dist/TeacherPortfolio-v1.2.1-source.tar.xz -C teacher_portfolio .
+          cp "$APK" dist/TeacherPortfolio-v1.2.2.apk
+          sha256sum dist/TeacherPortfolio-v1.2.2.apk > dist/TeacherPortfolio-v1.2.2.apk.sha256
+          tar --exclude='./app/src/main/res/font/*' -cJf dist/TeacherPortfolio-v1.2.2-source.tar.xz -C teacher_portfolio .
       - uses: actions/upload-artifact@v4
         with:
-          name: teacher-portfolio-v1.2.1
+          name: teacher-portfolio-v1.2.2
           path: dist/*
           if-no-files-found: error
           retention-days: 7

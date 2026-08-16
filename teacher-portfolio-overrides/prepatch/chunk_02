@@ -1,0 +1,48 @@
+dp(12))})
++            r2.addView(Space(this),LinearLayout.LayoutParams(0,dp(92),1f))
++            stats.addView(r2); box.addView(stats)
++        }
+         box.addView(sectionTitle("معلومات المعلم والمدرسة","تظهر هذه البيانات في الغلاف وتُستخدم عند تصدير ملف PDF."))
+ 
+         val fields=linkedMapOf<String,EditText>()
+@@ -144,15 +174,34 @@
+ 
+     private fun showSection(id:String) {
+         val sec=db.getSections(true).firstOrNull{it.id==id} ?: return; currentSectionId=id
+-        val scroll=ScrollView(this); val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(18),dp(18),dp(18),dp(36))}
+-        val head=LinearLayout(this).apply{orientation=if(isTablet)LinearLayout.HORIZONTAL else LinearLayout.VERTICAL;gravity=Gravity.CENTER_VERTICAL}
+-        head.addView(sectionTitle(sec.title,sec.description),LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.WRAP_CONTENT,1f));head.addView(btn("＋ إضافة شاهد",gold){showEvidenceDialog(sec,null)},LinearLayout.LayoutParams(if(isTablet)dp(145) else LinearLayout.LayoutParams.MATCH_PARENT,dp(48)))
+-        box.addView(head)
++        val page=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(paper)}
++
++        // رأس ثابت للقسم: يبقى ظاهرًا دائمًا أثناء التمرير، خصوصًا على الجوال.
++        val fixed=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(16),dp(12),dp(16),dp(10));setBackgroundColor(paper)}
++        if(isTablet){
++            val closeRow=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL}
++            closeRow.addView(sectionTitle(sec.title,sec.description),LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.WRAP_CONTENT,1f))
++            closeRow.addView(closeButton("إغلاق القسم"){showProfile()},LinearLayout.LayoutParams(dp(150),dp(46)).apply{marginStart=dp(10)})
++            fixed.addView(closeRow)
++        } else {
++            fixed.addView(closeButton("إغلاق القسم"){showProfile()},LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(46)))
++            fixed.addView(sectionTitle(sec.title,sec.description),LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT).apply{topMargin=dp(10)})
++        }
++        fixed.addView(btn("＋ إضافة شاهد",gold){showEvidenceDialog(sec,null)},LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(50)))
++        fixed.addView(View(this).apply{setBackgroundColor(line)},LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(1)).apply{topMargin=dp(12)})
++        page.addView(fixed,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT))
++
++        val scroll=ScrollView(this).apply{isFillViewport=true}
++        val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(16),dp(12),dp(16),dp(32))}
+         val search=edit("بحث داخل هذا القسم...");box.addView(search,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(50)).apply{bottomMargin=dp(14)})
+         val list=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};box.addView(list)
+-        fun render(q:String="") { list.removeAllViews(); val all=db.getEvidence(id); val items=if(q.isBlank())all else all.filter{(it.title+" "+it.description+" "+it.fileName).contains(q,true)}; if(items.isEmpty()) list.addView(tv(if(q.isBlank())"لا توجد شواهد بعد. اضغط «إضافة شاهد» للبدء." else "لا توجد نتائج مطابقة.",14f,muted).apply{gravity=Gravity.CENTER;background=bg(Color.WHITE,12,line);setPadding(dp(18),dp(38),dp(18),dp(38))}) else items.forEach{list.addView(evidenceCard(sec,it))} }
++        fun render(q:String="") {
++            list.removeAllViews(); val all=db.getEvidence(id); val items=if(q.isBlank())all else all.filter{(it.title+" "+it.description+" "+it.fileName).contains(q,true)}
++            if(items.isEmpty()) list.addView(tv(if(q.isBlank())"لا توجد شواهد بعد. اضغط «إضافة شاهد» في أعلى القسم للبدء." else "لا توجد نتائج مطابقة.",14f,muted).apply{gravity=Gravity.CENTER;background=bg(Color.WHITE,12,line);setPadding(dp(18),dp(38),dp(18),dp(38))})
++            else items.forEach{list.addView(evidenceCard(sec,it))}
++        }
+         search.addTextChangedListener(object:TextWatcher{override fun beforeTextChanged(s:CharSequence?,st:Int,c:Int,a:Int){};override fun onTextChanged(s:CharSequence?,st:Int,b:Int,c:Int){render(s?.toString()?:"")};override fun afterTextChanged(s:Editable?) {}});render()
+-        scroll.addView(box);setScreen(scroll)
++        scroll.addView(box);page.addView(scroll,LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,0,1f));setScreen(page)
+     }
+ 
+     private fun evidence

@@ -28,7 +28,7 @@ jobs:
           grep -q 'PdfRenderer' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
           grep -q 'completionPercent' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
           grep -q 'showEvidenceManageDialog' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          grep -q 'showExportOptions' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q 'اختيار الأقسام للتصدير' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
           grep -q 'مصمم الغلاف' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
           test -f teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/ZoomImageView.kt
       - name: Install Arabic fonts

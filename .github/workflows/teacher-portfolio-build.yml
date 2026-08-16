@@ -31,8 +31,11 @@ jobs:
               ../teacher-portfolio-overrides/v1.3.0-parts/part_01 \
               ../teacher-portfolio-overrides/v1.3.0-parts/part_02 \
               ../teacher-portfolio-overrides/v1.3.0-parts/part_03 \
-              ../teacher-portfolio-overrides/v1.3.0-parts/part_04 \
-              ../teacher-portfolio-overrides/v1.3.0-parts/part_05 | tr -cd 'A-Za-z0-9+/=' > /tmp/v1.3.0.patch.b64
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_04a \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_04b \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_04c \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_04d \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_05 > /tmp/v1.3.0.patch.b64
           base64 -d /tmp/v1.3.0.patch.b64 > /tmp/v1.3.0.patch
           echo '523144ea2abc81b609c7f5c8148752f8b7ac0a96d9b473aeb589d55d8f16a9e9  /tmp/v1.3.0.patch' | sha256sum -c -
           patch -p1 < /tmp/v1.3.0.patch

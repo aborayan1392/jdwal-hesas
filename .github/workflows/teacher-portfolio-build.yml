@@ -14,11 +14,43 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base64 -d teacher-portfolio-v1.3.1-source.b64 > teacher-portfolio-source.tar.xz
-          echo '67d22c92d0c31a3f63b7ba90ee54f88bd6ff87af9c3bdb8f234414b12bfa71a6  teacher-portfolio-source.tar.xz' | sha256sum -c -
+          cat teacher-portfolio-v1.2.1-chunks/chunk_00 \
+              teacher-portfolio-v1.2.1-chunks/chunk_01 \
+              teacher-portfolio-v1.2.1-chunks/chunk_02 \
+              teacher-portfolio-v1.2.1-chunks/chunk_03 \
+              teacher-portfolio-v1.2.1-chunks/chunk_04 > /tmp/source.b64
+          base64 -d /tmp/source.b64 > teacher-portfolio-source.tar.xz
+          echo '4bb2c0fb7878917f5f3b2884396be405eff22a8112835a657b907bf05056cbe5  teacher-portfolio-source.tar.xz' | sha256sum -c -
           mkdir teacher_portfolio
           tar -xJf teacher-portfolio-source.tar.xz -C teacher_portfolio
           cd teacher_portfolio
+          patch -p1 < ../teacher-portfolio-overrides/v1.2.2.patch
+          patch -p1 < ../teacher-portfolio-overrides/v1.2.3.patch
+          patch -p1 < ../teacher-portfolio-overrides/v1.2.4.patch
+          cat ../teacher-portfolio-overrides/v1.3.0-parts/part_00 \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_01 \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_02 \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_03 \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_04a \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_04b \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_04c \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_04d \
+              ../teacher-portfolio-overrides/v1.3.0-parts/part_05 > /tmp/v1.3.0.patch.b64
+          base64 -d /tmp/v1.3.0.patch.b64 > /tmp/v1.3.0.patch
+          echo '523144ea2abc81b609c7f5c8148752f8b7ac0a96d9b473aeb589d55d8f16a9e9  /tmp/v1.3.0.patch' | sha256sum -c -
+          patch -p1 < /tmp/v1.3.0.patch
+          cat ../teacher-portfolio-overrides/v1.3.1-lines/chunk_00 \
+              ../teacher-portfolio-overrides/v1.3.1-lines/chunk_01 \
+              ../teacher-portfolio-overrides/v1.3.1-lines/chunk_02 \
+              ../teacher-portfolio-overrides/v1.3.1-lines/chunk_03 \
+              ../teacher-portfolio-overrides/v1.3.1-lines/chunk_04 \
+              ../teacher-portfolio-overrides/v1.3.1-lines/chunk_05 \
+              ../teacher-portfolio-overrides/v1.3.1-lines/chunk_06 \
+              ../teacher-portfolio-overrides/v1.3.1-lines/chunk_07 \
+              ../teacher-portfolio-overrides/v1.3.1-lines/chunk_08 \
+              ../teacher-portfolio-overrides/v1.3.1-lines/chunk_09 > /tmp/v1.3.1.patch
+          echo '082fd04c6ee56d34177571ead4eeebc54473cb6354e0b6394da9190c13ed7265  /tmp/v1.3.1.patch' | sha256sum -c -
+          patch -p1 < /tmp/v1.3.1.patch
           grep -q 'versionName = "1.3.1"' app/build.gradle.kts
           grep -q 'window.decorView.layoutDirection=View.LAYOUT_DIRECTION_RTL' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
           grep -q 'numberedNavItem' app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt

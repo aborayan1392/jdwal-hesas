@@ -1,4 +1,4 @@
-name: Build Teacher Portfolio v1.4.0
+name: Build Teacher Portfolio v1.4.1
 on:
   push:
     branches: ['agent/teacher-portfolio-build']
@@ -10,39 +10,31 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
-      - name: Restore and repair v1.4.0 source
+      - name: Restore and verify v1.4.1 source
         shell: bash
         run: |
           set -euo pipefail
-          cat teacher-portfolio-v140-source/chunk_00 \
-              teacher-portfolio-v140-source/chunk_01 \
-              teacher-portfolio-v140-source/chunk_02 \
-              teacher-portfolio-v140-source/chunk_03 > /tmp/v140.b64
-          test "$(wc -c < /tmp/v140.b64)" -eq 48000
-          base64 -d /tmp/v140.b64 > /tmp/TeacherPortfolio-v1.4.0-source.tar.xz
-          echo '9b610eb3207762ee4670878dd3217342d9af5250b8174195b6bb42b66e0de930  /tmp/TeacherPortfolio-v1.4.0-source.tar.xz' | sha256sum -c -
+          cat teacher-portfolio-v141-source/chunk_00 \
+              teacher-portfolio-v141-source/chunk_01 \
+              teacher-portfolio-v141-source/chunk_02 \
+              teacher-portfolio-v141-source/chunk_03 \
+              teacher-portfolio-v141-source/chunk_04 \
+              teacher-portfolio-v141-source/chunk_05 \
+              teacher-portfolio-v141-source/chunk_06 \
+              teacher-portfolio-v141-source/chunk_07 > /tmp/v141.b64
+          test "$(wc -c < /tmp/v141.b64)" -eq 45488
+          base64 -d /tmp/v141.b64 > /tmp/TeacherPortfolio-v1.4.1-source.tar.xz
+          echo '0d4fcd5a5c56358b25c31a830d9c32461b20dd0435b0c02f8f9c189ec0bdccbb  /tmp/TeacherPortfolio-v1.4.1-source.tar.xz' | sha256sum -c -
           mkdir teacher_portfolio
-          tar -xJf /tmp/TeacherPortfolio-v1.4.0-source.tar.xz -C teacher_portfolio
-          sed -i 's/? :/?:/g' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          sed -i 's/? :/?:/g' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt')
-          s=p.read_text()
-          old='fun completionPercent():Int{val ss=getSections(false);if(ss.isEmpty())return 0;val pts=ss.sumOf{when(it.status){"مكتمل"->100;"قيد الإنجاز"->50;else->0}};return pts/ss.size}'
-          new='fun completionPercent():Int{val ss=getSections(false);if(ss.isEmpty())return 0;val pts=ss.fold(0){acc,sec->acc+when(sec.status){"مكتمل"->100;"قيد الإنجاز"->50;else->0}};return pts/ss.size}'
-          if old not in s: raise SystemExit('completionPercent exact pattern not found')
-          p.write_text(s.replace(old,new))
-          PY
-          ! grep -R -F -q '? :' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio
-          grep -q 'versionName = "1.4.0"' teacher_portfolio/app/build.gradle.kts
-          grep -q 'CREATE TABLE attachments' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
-          grep -q 'PdfRenderer' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          tar -xJf /tmp/TeacherPortfolio-v1.4.1-source.tar.xz -C teacher_portfolio
+          grep -q 'versionName = "1.4.1"' teacher_portfolio/app/build.gradle.kts
+          grep -q 'versionCode = 13' teacher_portfolio/app/build.gradle.kts
+          grep -q 'إلغاء تحديد الكل' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q 'confirmDeleteSection' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q 'sectionStatusColor' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q 'اسحب للترتيب • حدّد حالة الإنجاز' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
+          grep -q '＋ شاهد' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
           grep -q 'fold(0)' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/PortfolioDb.kt
-          grep -q 'showEvidenceManageDialog' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          grep -q 'اختيار الأقسام للتصدير' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          grep -q 'مصمم الغلاف' teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/MainActivity.kt
-          test -f teacher_portfolio/app/src/main/java/com/aborayan/teacherportfolio/ZoomImageView.kt
       - name: Install Arabic fonts
         shell: bash
         run: |
@@ -66,7 +58,7 @@ jobs:
       - name: Compile and lint
         working-directory: teacher_portfolio
         run: gradle --no-daemon lintDebug assembleDebug
-      - name: Verify real v1.4.0 APK
+      - name: Verify v1.4.1 APK
         shell: bash
         run: |
           set -euo pipefail
@@ -75,16 +67,17 @@ jobs:
           unzip -tq "$APK"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose "$APK"
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging "$APK" | tee /tmp/badging.txt
-          grep -q "versionName='1.4.0'" /tmp/badging.txt
+          grep -q "versionName='1.4.1'" /tmp/badging.txt
+          grep -q "versionCode='13'" /tmp/badging.txt
           NEW_SHA=$(sha256sum "$APK" | awk '{print $1}')
-          test "$NEW_SHA" != 'ef89604b5b2f76bc035b6a742737d308229835bd5b2a64b520d882b8605cb0a5'
+          test "$NEW_SHA" != '0a5eb0f53051c91161b13fa489b9c8a6a65bcf3d44da60ff7fdeaa5a5010f77b'
           mkdir -p dist
-          cp "$APK" dist/TeacherPortfolio-v1.4.0.apk
-          sha256sum dist/TeacherPortfolio-v1.4.0.apk > dist/TeacherPortfolio-v1.4.0.apk.sha256
-          tar --exclude='./app/src/main/res/font/*' -cJf dist/TeacherPortfolio-v1.4.0-source.tar.xz -C teacher_portfolio .
+          cp "$APK" dist/TeacherPortfolio-v1.4.1.apk
+          sha256sum dist/TeacherPortfolio-v1.4.1.apk > dist/TeacherPortfolio-v1.4.1.apk.sha256
+          tar --exclude='./app/src/main/res/font/*' -cJf dist/TeacherPortfolio-v1.4.1-source.tar.xz -C teacher_portfolio .
       - uses: actions/upload-artifact@v4
         with:
-          name: teacher-portfolio-v1.4.0-real
+          name: teacher-portfolio-v1.4.1
           path: dist/*
           if-no-files-found: error
           retention-days: 7

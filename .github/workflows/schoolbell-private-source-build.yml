@@ -1,0 +1,20 @@
+name: SchoolBell private source test
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.schoolbell-build-trigger']
+permissions:
+  contents: read
+jobs:
+  test-private-checkout:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private build repository
+        uses: actions/checkout@v4
+        with:
+          repository: aborayan1392/wabel-android-build
+          ref: build-schoolbell-v229
+          token: ${{ github.token }}
+          path: source
+      - name: Verify source
+        run: test -f source/jobs/schoolbell-v229/project/part-000.bin

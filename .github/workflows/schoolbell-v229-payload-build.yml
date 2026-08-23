@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f jobs/schoolbell-v229/READY
-          test "$(find jobs/schoolbell-v229/project -name 'part-*.b64' | wc -l)" = "21"
+          test "$(find jobs/schoolbell-v229/project -name 'part-*.b64' | wc -l)" = "30"
 
       - name: Restore source
         shell: bash

@@ -91,6 +91,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 -m pip install --quiet lxml
           cd work/source/SchoolBellJava
           python3 tools/validate_project.py
           grep -q 'versionCode 19' app/build.gradle

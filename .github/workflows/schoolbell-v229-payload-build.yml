@@ -1,4 +1,4 @@
-name: SchoolBell v2.2.9 Payload Build
+name: SchoolBell v2.2.10 Payload Build
 
 on:
   pull_request:
@@ -23,6 +23,7 @@ jobs:
           set -euo pipefail
           test -f jobs/schoolbell-v229/READY
           test "$(find jobs/schoolbell-v229/project -name 'part-*.b64' | wc -l)" = "30"
+          test -f jobs/schoolbell-v229/patch-v2210.py
 
       - name: Restore source
         shell: bash
@@ -36,6 +37,14 @@ jobs:
           unzip -q work/project.zip -d work/source
           test -f work/source/SchoolBellJava/settings.gradle
           test -f work/source/SchoolBellJava/app/build.gradle
+
+      - name: Apply centered card layout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 jobs/schoolbell-v229/patch-v2210.py
+          grep -q 'versionCode 20' work/source/SchoolBellJava/app/build.gradle
+          grep -q 'versionName "2.2.10"' work/source/SchoolBellJava/app/build.gradle
 
       - name: Restore Cairo fonts and bell sound
         shell: bash
@@ -94,8 +103,8 @@ jobs:
           python3 -m pip install --quiet lxml
           cd work/source/SchoolBellJava
           python3 tools/validate_project.py
-          grep -q 'versionCode 19' app/build.gradle
-          grep -q 'versionName "2.2.9"' app/build.gradle
+          grep -q 'versionCode 20' app/build.gradle
+          grep -q 'versionName "2.2.10"' app/build.gradle
 
       - name: Build debug APK
         shell: bash
@@ -113,20 +122,20 @@ jobs:
           unzip -t "$APK" >/dev/null
           BT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/build-tools/36.0.0"
           mkdir -p dist
-          cp "$APK" dist/SchoolBell-v2.2.9-Card-Layout.apk
-          "$BT/apksigner" verify --verbose --print-certs dist/SchoolBell-v2.2.9-Card-Layout.apk | tee dist/verification.txt
-          "$BT/zipalign" -c -p 4 dist/SchoolBell-v2.2.9-Card-Layout.apk
-          "$BT/aapt" dump badging dist/SchoolBell-v2.2.9-Card-Layout.apk | tee dist/apk-info.txt
+          cp "$APK" dist/SchoolBell-v2.2.10-Centered-Card.apk
+          "$BT/apksigner" verify --verbose --print-certs dist/SchoolBell-v2.2.10-Centered-Card.apk | tee dist/verification.txt
+          "$BT/zipalign" -c -p 4 dist/SchoolBell-v2.2.10-Centered-Card.apk
+          "$BT/aapt" dump badging dist/SchoolBell-v2.2.10-Centered-Card.apk | tee dist/apk-info.txt
           grep -q "package: name='com.aboryan.schoolbell'" dist/apk-info.txt
-          grep -q "versionCode='19'" dist/apk-info.txt
-          grep -q "versionName='2.2.9'" dist/apk-info.txt
+          grep -q "versionCode='20'" dist/apk-info.txt
+          grep -q "versionName='2.2.10'" dist/apk-info.txt
           grep -q "targetSdkVersion:'36'" dist/apk-info.txt
-          sha256sum dist/SchoolBell-v2.2.9-Card-Layout.apk > dist/SHA256SUMS.txt
+          sha256sum dist/SchoolBell-v2.2.10-Centered-Card.apk > dist/SHA256SUMS.txt
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SchoolBell-v2.2.9
+          name: SchoolBell-v2.2.10
           path: dist/*
           if-no-files-found: error
           retention-days: 7

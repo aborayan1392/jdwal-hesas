@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
     paths:
-      - 'jobs/schoolbell-v229/**'
+      - 'jobs/schoolbell-v229/READY'
 
 permissions:
   contents: read
@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f jobs/schoolbell-v229/READY
-          test "$(find jobs/schoolbell-v229/project -name 'part-*.b64' | wc -l)" = "8"
+          test "$(find jobs/schoolbell-v229/project -name 'part-*.b64' | wc -l)" = "15"
 
       - name: Restore source
         shell: bash
@@ -31,11 +31,40 @@ jobs:
           mkdir -p work/source
           cat jobs/schoolbell-v229/project/part-*.b64 > work/project.b64
           base64 -d work/project.b64 > work/project.zip
-          echo "fe71968a3481b0ab36fd54b5611aa767c2f1cf879b99d00a9880cc5b57e29df6  work/project.zip" | sha256sum -c -
+          echo "20a71a1cfe728cea8b4af4470494064d1b15356d34d6cf2b76ca868d2adc2380  work/project.zip" | sha256sum -c -
           unzip -t work/project.zip >/dev/null
           unzip -q work/project.zip -d work/source
           test -f work/source/SchoolBellJava/settings.gradle
           test -f work/source/SchoolBellJava/app/build.gradle
+
+      - name: Restore Cairo fonts and bell sound
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=work/source/SchoolBellJava/app/src/main/res
+          mkdir -p "$ROOT/font" "$ROOT/raw"
+          curl -fL --retry 3 -o "$ROOT/font/cairo_400.ttf" 'https://raw.githubusercontent.com/emadomedher/google-fonts-arabic/master/lib/fonts/Cairo/Cairo-Regular.ttf'
+          curl -fL --retry 3 -o "$ROOT/font/cairo_700.ttf" 'https://raw.githubusercontent.com/emadomedher/google-fonts-arabic/master/lib/fonts/Cairo/Cairo-Bold.ttf'
+          python3 - "$ROOT/raw/school_bell.wav" <<'PY'
+          import math, struct, sys, wave
+          out=sys.argv[1]
+          rate=22050
+          dur=1.6
+          n=int(rate*dur)
+          with wave.open(out,'wb') as w:
+              w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate)
+              frames=[]
+              for i in range(n):
+                  t=i/rate
+                  env=math.exp(-2.6*t)
+                  x=(math.sin(2*math.pi*880*t)+0.55*math.sin(2*math.pi*1320*t)+0.25*math.sin(2*math.pi*1760*t))*env
+                  x=max(-1,min(1,x*0.45))
+                  frames.append(struct.pack('<h',int(x*32767)))
+              w.writeframes(b''.join(frames))
+          PY
+          test -s "$ROOT/font/cairo_400.ttf"
+          test -s "$ROOT/font/cairo_700.ttf"
+          test -s "$ROOT/raw/school_bell.wav"
 
       - name: Set up Java 17
         uses: actions/setup-java@v4

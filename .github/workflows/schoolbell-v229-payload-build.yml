@@ -1,0 +1,102 @@
+name: SchoolBell v2.2.9 Payload Build
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'jobs/schoolbell-v229/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure payload complete
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f jobs/schoolbell-v229/READY
+          test "$(find jobs/schoolbell-v229/project -name 'part-*.b64' | wc -l)" = "8"
+
+      - name: Restore source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/source
+          cat jobs/schoolbell-v229/project/part-*.b64 > work/project.b64
+          base64 -d work/project.b64 > work/project.zip
+          echo "fe71968a3481b0ab36fd54b5611aa767c2f1cf879b99d00a9880cc5b57e29df6  work/project.zip" | sha256sum -c -
+          unzip -t work/project.zip >/dev/null
+          unzip -q work/project.zip -d work/source
+          test -f work/source/SchoolBellJava/settings.gradle
+          test -f work/source/SchoolBellJava/app/build.gradle
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Set up Gradle 9.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+
+      - name: Validate source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd work/source/SchoolBellJava
+          python3 tools/validate_project.py
+          grep -q 'versionCode 19' app/build.gradle
+          grep -q 'versionName "2.2.9"' app/build.gradle
+
+      - name: Build debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd work/source/SchoolBellJava
+          gradle --no-daemon --console=plain --stacktrace :app:assembleDebug
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=work/source/SchoolBellJava/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          BT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/build-tools/36.0.0"
+          mkdir -p dist
+          cp "$APK" dist/SchoolBell-v2.2.9-Card-Layout.apk
+          "$BT/apksigner" verify --verbose --print-certs dist/SchoolBell-v2.2.9-Card-Layout.apk | tee dist/verification.txt
+          "$BT/zipalign" -c -p 4 dist/SchoolBell-v2.2.9-Card-Layout.apk
+          "$BT/aapt" dump badging dist/SchoolBell-v2.2.9-Card-Layout.apk | tee dist/apk-info.txt
+          grep -q "package: name='com.aboryan.schoolbell'" dist/apk-info.txt
+          grep -q "versionCode='19'" dist/apk-info.txt
+          grep -q "versionName='2.2.9'" dist/apk-info.txt
+          grep -q "targetSdkVersion:'36'" dist/apk-info.txt
+          sha256sum dist/SchoolBell-v2.2.9-Card-Layout.apk > dist/SHA256SUMS.txt
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SchoolBell-v2.2.9
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
